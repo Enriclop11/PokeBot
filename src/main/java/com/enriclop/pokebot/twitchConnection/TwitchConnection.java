@@ -21,10 +21,10 @@ public class TwitchConnection {
 
     Pokemon wildPokemon;
 
-    Spawn spawnPokemon;
-
     TwitchClient twitchClient;
     EventManager eventManager;
+
+    Combat activeCombat;
 
     public TwitchConnection(UserService userService, PokemonService pokemonService) {
         this.userService = userService;
@@ -129,6 +129,11 @@ public class TwitchConnection {
 
     public void startCombat(ChannelMessageEvent event) {
 
+        if (activeCombat != null && activeCombat.active) {
+            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Ya hay un combate en curso!");
+            return;
+        }
+
         if (event.getMessage().split(" ").length < 2) {
             twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Elige un usuario para combatir!");
             return;
@@ -165,18 +170,18 @@ public class TwitchConnection {
             return;
         }
 
-        int pokemonPosition = Integer.parseInt(event.getMessage().split(" ")[2]);
-
         Pokemon pokemon1;
 
         try {
+            int pokemonPosition = Integer.parseInt(event.getMessage().split(" ")[2])-1;
             pokemon1 = player1.getPokemons().get(pokemonPosition);
         } catch (Exception e) {
             twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"El pokemon no existe!");
             return;
         }
 
-        Combat combat = new Combat(pokemon1, player2, userService, twitchClient);
+        activeCombat = new Combat(pokemon1, player2, userService, twitchClient);
+        activeCombat.start();
     }
 
     public void lookPokemon(ChannelMessageEvent event){
@@ -194,7 +199,7 @@ public class TwitchConnection {
             pokemonList.append((pokemons.indexOf(pokemon)+1) + ". " + Utilities.firstLetterToUpperCase(pokemon.getName()) + " " + "HP: " + pokemon.getHp() + " ATK: " + pokemon.getAttack() + " DEF: " + pokemon.getDefense() + " SPATK: " + pokemon.getSpecialAttack() + " SPDEF: " + pokemon.getSpecialDefense() + " SPD: " + pokemon.getSpeed() + "\n");
         }
 
-        twitchClient.getHelix().sendWhisper(SETTINGS.TWITCH_TOKEN, "1015582333" , "265496355", "a");
+        System.out.println(pokemonList.toString());
 
     }
 

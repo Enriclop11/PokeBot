@@ -22,12 +22,12 @@ public class PokeApi {
 
             String Name = jsonNode.get("name").asText();
             JsonNode stats = jsonNode.get("stats");
-            String hp = stats.get(0).get("base_stat").asText();
-            String attack = stats.get(1).get("base_stat").asText();
-            String defense = stats.get(2).get("base_stat").asText();
-            String specialAttack = stats.get(3).get("base_stat").asText();
-            String specialDefense = stats.get(4).get("base_stat").asText();
-            String speed = stats.get(5).get("base_stat").asText();
+            int hp = Integer.parseInt(stats.get(0).get("base_stat").asText());
+            int attack = Integer.parseInt(stats.get(1).get("base_stat").asText());
+            int defense = Integer.parseInt(stats.get(2).get("base_stat").asText());
+            int specialAttack = Integer.parseInt(stats.get(3).get("base_stat").asText());
+            int specialDefense = Integer.parseInt(stats.get(4).get("base_stat").asText());
+            int speed = Integer.parseInt(stats.get(5).get("base_stat").asText());
 
             Pokemon newPokemon = new Pokemon(Name, hp, attack, defense, specialAttack, specialDefense, speed);
             return newPokemon;

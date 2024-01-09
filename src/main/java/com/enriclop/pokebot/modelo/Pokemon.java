@@ -15,17 +15,17 @@ public class Pokemon {
 
     private String name;
 
-    private String hp;
+    private int hp;
 
-    private String attack;
+    private int attack;
 
-    private String defense;
+    private int defense;
 
-    private String specialAttack;
+    private int specialAttack;
 
-    private String specialDefense;
+    private int specialDefense;
 
-    private String speed;
+    private int speed;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -34,7 +34,7 @@ public class Pokemon {
     public Pokemon() {
     }
 
-    public Pokemon(String name, String hp, String attack, String defense, String specialAttack, String specialDefense, String speed) {
+    public Pokemon(String name, int hp, int attack, int defense, int specialAttack, int specialDefense, int speed) {
         this.name = name;
         this.hp = hp;
         this.attack = attack;
