@@ -3,16 +3,14 @@ package com.enriclop.pokebot.twitchConnection;
 import com.enriclop.pokebot.modelo.Pokemon;
 import com.enriclop.pokebot.modelo.User;
 import com.enriclop.pokebot.servicio.UserService;
-import com.gikk.twirk.Twirk;
-import com.gikk.twirk.events.TwirkListener;
-import com.gikk.twirk.types.twitchMessage.TwitchMessage;
-import com.gikk.twirk.types.users.TwitchUser;
+import com.github.twitch4j.TwitchClient;
+import com.github.twitch4j.chat.events.channel.ChannelMessageEvent;
 
 public class Combat extends Thread{
 
     UserService userService;
 
-    Twirk twirk;
+    TwitchClient twitchClient;
 
     User player1;
     User player2;
@@ -20,11 +18,11 @@ public class Combat extends Thread{
     Pokemon pokemon1;
     Pokemon pokemon2;
 
-    TwirkListener listener;
+    Boolean accepted = false;
 
-    public Combat(Pokemon pokemon1, User user2, UserService userService, Twirk twirk) {
+    public Combat(Pokemon pokemon1, User user2, UserService userService, TwitchClient twitchClient) {
         this.userService = userService;
-        this.twirk = twirk;
+        this.twitchClient = twitchClient;
 
         this.pokemon1 = pokemon1;
 
@@ -33,36 +31,34 @@ public class Combat extends Thread{
     }
 
     public void run() {
-        twirk.channelMessage("¡" + player1.getUsername() + " ha retado a " + player2.getUsername() + " a un combate!");
-        twirk.channelMessage("¡" + player2.getUsername() + " aceptara el combate? !accept <Pokemon>");
+        twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + player1.getUsername() + " ha retado a " + player2.getUsername() + " a un combate!");
+        twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + player2.getUsername() + " aceptara el combate? !accept <Pokemon>");
 
+        twitchClient.getEventManager().onEvent(ChannelMessageEvent.class, event -> {
+            if (accepted) return;
 
-        listener = new TwirkListener() {
-            public void onPrivMsg(TwitchUser sender, TwitchMessage message) {
+            String command = event.getMessage().split(" ")[0];
 
-                String command = message.getContent().split(" ")[0];
+            if (command.equals("!accept")){
+                twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + player2.getUsername() + " ha aceptado el combate!");
 
-                if (command.equals("!accept")){
-                    twirk.channelMessage("¡" + player2.getUsername() + " ha aceptado el combate!");
-
-                    int pokemonPosition = Integer.parseInt(message.getContent().split(" ")[1]);
-                    try {
-                        pokemon2 = player2.getPokemons().get(pokemonPosition);
-                    } catch (Exception e) {
-                        twirk.channelMessage("¡" + player2.getUsername() + " no tiene un pokemon en esa posicion!");
-                        return;
-                    }
-
-                    startCombat();
+                int pokemonPosition = Integer.parseInt(event.getMessage().split(" ")[1]);
+                try {
+                    pokemon2 = player2.getPokemons().get(pokemonPosition);
+                } catch (Exception e) {
+                    twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + player2.getUsername() + " no tiene un pokemon en esa posicion!");
+                    return;
                 }
-            }
-        };
 
-        twirk.addIrcListener(listener);
+                startCombat();
+            }
+        });
+
+
     }
 
     public void startCombat(){
-        twirk.removeIrcListener(listener);
+
     }
 
 

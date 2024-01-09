@@ -1,4 +1,4 @@
-package com.enriclop.pokebot.pokeApi;
+package com.enriclop.pokebot.apis;
 
 import com.enriclop.pokebot.modelo.Pokemon;
 import com.fasterxml.jackson.databind.JsonNode;
