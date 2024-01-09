@@ -12,9 +12,15 @@ import com.github.twitch4j.TwitchClient;
 import com.github.twitch4j.TwitchClientBuilder;
 import com.github.twitch4j.chat.events.channel.ChannelMessageEvent;
 import com.github.twitch4j.common.events.domain.EventUser;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Component
+@Getter
+@Setter
 public class TwitchConnection {
     UserService userService;
     PokemonService pokemonService;
@@ -91,11 +97,7 @@ public class TwitchConnection {
     }
 
     public void spawnPokemon() {
-        int countPokemon = 1025;
-
-        int randomPokemon = (int) (Math.random() * countPokemon) + 1;
-
-        Pokemon newPokemon = PokeApi.getPokemonById(randomPokemon);
+        Pokemon newPokemon = PokeApi.getRandomPokemon();
 
         if (newPokemon != null) {
             wildPokemon = newPokemon;
@@ -202,7 +204,5 @@ public class TwitchConnection {
         System.out.println(pokemonList.toString());
 
     }
-
-
 
 }

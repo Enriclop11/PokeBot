@@ -1,5 +1,6 @@
 package com.enriclop.pokebot.modelo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -27,14 +28,17 @@ public class Pokemon {
 
     private int speed;
 
+    private String frontSprite;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnore
     private User user;
 
     public Pokemon() {
     }
 
-    public Pokemon(String name, int hp, int attack, int defense, int specialAttack, int specialDefense, int speed) {
+    public Pokemon(String name, int hp, int attack, int defense, int specialAttack, int specialDefense, int speed, String frontSprite, String backSprite) {
         this.name = name;
         this.hp = hp;
         this.attack = attack;
@@ -42,6 +46,7 @@ public class Pokemon {
         this.specialAttack = specialAttack;
         this.specialDefense = specialDefense;
         this.speed = speed;
+        this.frontSprite = frontSprite;
     }
 
     @Override
@@ -49,13 +54,13 @@ public class Pokemon {
         return "Pokemon{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", hp='" + hp + '\'' +
-                ", attack='" + attack + '\'' +
-                ", defense='" + defense + '\'' +
-                ", specialAttack='" + specialAttack + '\'' +
-                ", specialDefense='" + specialDefense + '\'' +
-                ", speed='" + speed + '\'' +
-                ", user=" + user.getId() +
+                ", hp=" + hp +
+                ", attack=" + attack +
+                ", defense=" + defense +
+                ", specialAttack=" + specialAttack +
+                ", specialDefense=" + specialDefense +
+                ", speed=" + speed +
+                ", frontSprite='" + frontSprite + '\'' +
                 '}';
     }
 }

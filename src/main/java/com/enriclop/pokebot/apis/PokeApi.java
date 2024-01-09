@@ -28,13 +28,22 @@ public class PokeApi {
             int specialAttack = Integer.parseInt(stats.get(3).get("base_stat").asText());
             int specialDefense = Integer.parseInt(stats.get(4).get("base_stat").asText());
             int speed = Integer.parseInt(stats.get(5).get("base_stat").asText());
+            String frontSprite = jsonNode.get("sprites").get("front_default").asText();
+            String backSprite = jsonNode.get("sprites").get("back_default").asText();
 
-            Pokemon newPokemon = new Pokemon(Name, hp, attack, defense, specialAttack, specialDefense, speed);
-            return newPokemon;
+            return new Pokemon(Name, hp, attack, defense, specialAttack, specialDefense, speed, frontSprite, backSprite);
 
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public static Pokemon getRandomPokemon(){
+        int countPokemon = 1025;
+
+        int randomPokemon = (int) (Math.random() * countPokemon) + 1;
+
+        return PokeApi.getPokemonById(randomPokemon);
     }
 }
