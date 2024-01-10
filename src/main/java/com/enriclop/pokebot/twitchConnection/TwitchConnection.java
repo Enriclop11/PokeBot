@@ -186,6 +186,11 @@ public class TwitchConnection {
         activeCombat.start();
     }
 
+    public void lookPokemon (ChannelMessageEvent event){
+        twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Tus pokemon: " + SETTINGS.DOMAIN + "/pokemon/" + event.getUser().getName().toLowerCase());
+    }
+
+    /*
     public void lookPokemon(ChannelMessageEvent event){
         StringBuilder pokemonList = new StringBuilder("Tus pokemon: ");
 
@@ -204,5 +209,5 @@ public class TwitchConnection {
         System.out.println(pokemonList.toString());
 
     }
-
+     */
 }

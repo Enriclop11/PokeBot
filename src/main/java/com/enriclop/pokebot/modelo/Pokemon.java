@@ -14,6 +14,8 @@ public class Pokemon {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    private int position;
+
     private String name;
 
     private int hp;
@@ -47,6 +49,11 @@ public class Pokemon {
         this.specialDefense = specialDefense;
         this.speed = speed;
         this.frontSprite = frontSprite;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+        position = user.getPokemons().size()+1;
     }
 
     @Override

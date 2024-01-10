@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caja de Pokémon</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      background-color: #f2f2f2;
+
+      background-image: url("https://i.pinimg.com/736x/98/c1/5a/98c15a449a1166ec23f5c9f1f63995dd.jpg");
+    }
+
+    .pokemon-box {
+      width: 200px;
+      border: 2px solid #333;
+      padding: 10px;
+      margin: 20px;
+      background-color: #fff;
+      display: inline-block;
+    }
+
+    .pokemon-name {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .pokemon-stats {
+      font-size: 14px;
+    }
+
+    .pokemon-sprite {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Caja de Pokémon</h1>
+  <h1 th:text="${user.getUsername()}"></h1>
+
+
+  <div class="pokemon-box" th:each="pokemon: ${user.getPokemons()}">
+    <img th:src="${pokemon.getFrontSprite()}" th:alt="${pokemon.getId()}" class="pokemon-sprite">
+    <div class="pokemon-name" th:text="${'Pokemon ' + pokemon.getPosition() + ':'}"></div>
+    <div class="pokemon-name" th:text="${pokemon.getName()}"></div>
+    <div class="pokemon-stats">
+      <p th:text="${'HP: ' + pokemon.getHp()}"></p>
+      <p th:text="${'ATK: ' + pokemon.getAttack()}"></p>
+      <p th:text="${'DEF: ' + pokemon.getDefense()}"></p>
+      <p th:text="${'SPATK: ' + pokemon.getSpecialAttack()}"></p>
+      <p th:text="${'SPDEF: ' + pokemon.getSpecialDefense()}"></p>
+      <p th:text="${'SPD: ' + pokemon.getSpeed()}"></p>
+    </div>
+  </div>
+
+</body>
+</html>
