@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f8f8;
+            color: #333;
+        }
+
+        a  {
+            margin: 0 10px;
+            text-decoration: none;
+            color: #333;
+            display: flex;
+        }
+
+        td img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .pc-link {
+            display: inline-block;
+            text-decoration: none;
+            color: #4285f4;
+        }
+
+        .pc-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <title>Leaderboard Pokémon</title>
+</head>
+<body>
+<h2>Leaderboard Pokémon</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Posición</th>
+        <th>Entrenador</th>
+        <th>Pokémon Registrados</th>
+        <th>Puntuación</th>
+        <th>PC</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- Aquí se deben insertar dinámicamente las filas de la tabla con los datos del leaderboard -->
+    <tr th:each="user, posStat : ${users}">
+        <td th:text="${posStat.count}"></td>
+        <td>
+            <a th:href="@{https://www.twitch.tv/{username}(username=${user.username})}">
+                <img th:src="@{${user.avatar}}" alt="Avatar">
+                <p th:text="${user.username}"></p>
+            </a>
+        </td>
+        <td th:text="${user.pokemons.size()}"></td>
+        <td th:text="${user.score}"></td>
+        <td>
+            <a class="pc-link" th:href="@{/pokemon/{username}(username=${user.username})}">
+                <img src="https://archives.bulbagarden.net/media/upload/thumb/6/61/Red_on_computer.png/220px-Red_on_computer.png" alt="PC">
+            </a>
+        </td>
+    </tr>
+    <!-- Puedes repetir este patrón para más usuarios -->
+    </tbody>
+</table>
+</body>
+</html>

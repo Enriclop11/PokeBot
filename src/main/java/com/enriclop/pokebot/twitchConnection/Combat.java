@@ -7,9 +7,13 @@ import com.enriclop.pokebot.utilities.Timer;
 import com.enriclop.pokebot.utilities.Utilities;
 import com.github.twitch4j.TwitchClient;
 import com.github.twitch4j.chat.events.channel.ChannelMessageEvent;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
+@Getter
+@Setter
 public class Combat extends Thread{
 
     UserService userService;
@@ -29,6 +33,27 @@ public class Combat extends Thread{
     Boolean active = true;
 
     Timer timer;
+
+    User winner;
+
+
+    private static class PokemonCombat extends Pokemon {
+        int currentHp;
+
+        public int getCurrentHp() {
+            return currentHp;
+        }
+
+        public void setCurrentHp(int currentHp) {
+            this.currentHp = currentHp;
+        }
+
+        public PokemonCombat(Pokemon pokemon) {
+            super(pokemon.getName(), pokemon.getHp(), pokemon.getAttack(), pokemon.getDefense(), pokemon.getSpecialAttack(), pokemon.getSpecialDefense(), pokemon.getSpeed(), pokemon.getFrontSprite(), pokemon.isShiny(), pokemon.getUser());
+            currentHp = pokemon.getHp();
+        }
+    }
+
 
     public Combat(Pokemon pokemon1, User user2, UserService userService, TwitchClient twitchClient) {
         this.userService = userService;
@@ -81,34 +106,41 @@ public class Combat extends Thread{
     public void startCombat(){
         order = List.of(pokemon1, pokemon2);
 
-        for (Pokemon pokemon : order) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + Utilities.firstLetterToUpperCase(pokemon.getUser().getUsername()) + " ha sacado a " + Utilities.firstLetterToUpperCase(pokemon.getName()) + "!");
-        }
-
         if (pokemon1.getSpeed() < pokemon2.getSpeed()) order = List.of(pokemon2, pokemon1);
 
-        while (pokemon1.getHp() > 0 && pokemon2.getHp() > 0){
-            attack(order.get(0), order.get(1));
-            if (order.get(1).getHp() <= 0) break;
-            attack(order.get(1), order.get(0));
+        PokemonCombat pokemon1 = new PokemonCombat(this.order.get(0));
+        PokemonCombat pokemon2 = new PokemonCombat(this.order.get(1));
+
+        while (pokemon1.getCurrentHp() > 0 && pokemon2.getCurrentHp() > 0){
+            attack(pokemon1, pokemon2);
+            if (pokemon2.getCurrentHp() <= 0) break;
+            attack(pokemon2, pokemon1);
         }
 
-        active = false;
+        if (pokemon1.getCurrentHp() <= 0) {
+            winner = pokemon2.getUser();
+        } else {
+            winner = pokemon1.getUser();
+        }
+
+        winner = userService.getUserById(winner.getId());
+        winner.addScore(1);
+        userService.saveUser(winner);
     }
 
-    public void attack(Pokemon attacker, Pokemon defender){
+    public void endCombat(){
+        order = null;
+        active = false;
+        winner = null;
+    }
+
+    public void attack(PokemonCombat attacker, PokemonCombat defender){
         double damage =  attacker.getAttack() * (100.0 / (defender.getDefense()));
         if (damage < 0) damage = 0;
-        System.out.println(damage);
-        defender.setHp((int) (defender.getHp() - damage));
+        System.out.println((int) damage);
+        defender.setCurrentHp((int) (defender.getCurrentHp() - damage));
 
-        if (defender.getHp() < 0) defender.setHp(0);
-
-        twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + Utilities.firstLetterToUpperCase(attacker.getUser().getUsername()) + " ha atacado a " + Utilities.firstLetterToUpperCase(defender.getUser().getUsername()) + " y le ha hecho " + (int) damage + " de daño! " + Utilities.firstLetterToUpperCase(defender.getName()) + " tiene " + defender.getHp() + " de vida!");
-
-        if (defender.getHp() <= 0) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + Utilities.firstLetterToUpperCase(defender.getUser().getUsername()) + " ha perdido!");
-        }
+        if (defender.getCurrentHp() < 0) defender.setCurrentHp(0);
     }
 
 

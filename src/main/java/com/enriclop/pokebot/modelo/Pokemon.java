@@ -14,8 +14,6 @@ public class Pokemon {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    private int position;
-
     private String name;
 
     private int hp;
@@ -32,6 +30,8 @@ public class Pokemon {
 
     private String frontSprite;
 
+    private boolean isShiny;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     @JsonIgnore
@@ -40,7 +40,7 @@ public class Pokemon {
     public Pokemon() {
     }
 
-    public Pokemon(String name, int hp, int attack, int defense, int specialAttack, int specialDefense, int speed, String frontSprite, String backSprite) {
+    public Pokemon(String name, int hp, int attack, int defense, int specialAttack, int specialDefense, int speed, String frontSprite, boolean isShiny) {
         this.name = name;
         this.hp = hp;
         this.attack = attack;
@@ -49,25 +49,39 @@ public class Pokemon {
         this.specialDefense = specialDefense;
         this.speed = speed;
         this.frontSprite = frontSprite;
+        this.isShiny = isShiny;
+    }
+
+    public Pokemon(String name, int hp, int attack, int defense, int specialAttack, int specialDefense, int speed, String frontSprite, boolean isShiny, User user) {
+        this.name = name;
+        this.hp = hp;
+        this.attack = attack;
+        this.defense = defense;
+        this.specialAttack = specialAttack;
+        this.specialDefense = specialDefense;
+        this.speed = speed;
+        this.frontSprite = frontSprite;
+        this.isShiny = isShiny;
+        this.user = user;
     }
 
     public void setUser(User user) {
         this.user = user;
-        position = user.getPokemons().size()+1;
     }
 
     @Override
     public String toString() {
-        return "Pokemon{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", hp=" + hp +
-                ", attack=" + attack +
-                ", defense=" + defense +
-                ", specialAttack=" + specialAttack +
-                ", specialDefense=" + specialDefense +
-                ", speed=" + speed +
-                ", frontSprite='" + frontSprite + '\'' +
+        return '{' +
+                "\"id\":" + id +
+                ", \"name\":\"" + name + '\"' +
+                ", \"hp\":" + hp +
+                ", \"attack\":" + attack +
+                ", \"defense\":" + defense +
+                ", \"specialAttack\":" + specialAttack +
+                ", \"specialDefense\":" + specialDefense +
+                ", \"speed\":" + speed +
+                ", \"frontSprite\":\"" + frontSprite + '\"' +
+                ", \"isShiny\":" + isShiny +
                 '}';
     }
 }

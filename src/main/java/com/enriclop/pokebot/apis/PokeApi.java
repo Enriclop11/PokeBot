@@ -9,7 +9,9 @@ import java.net.URL;
 
 public class PokeApi {
 
-    public static Pokemon getPokemonById(Integer id) {
+    private static int countPokemon = 1025;
+
+    public static Pokemon getPokemonById(Integer id, boolean isShiny) {
         try {
             URL url = new URL("https://pokeapi.co/api/v2/pokemon/"+id+"/");
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -28,11 +30,14 @@ public class PokeApi {
             int specialAttack = Integer.parseInt(stats.get(3).get("base_stat").asText());
             int specialDefense = Integer.parseInt(stats.get(4).get("base_stat").asText());
             int speed = Integer.parseInt(stats.get(5).get("base_stat").asText());
-            String frontSprite = jsonNode.get("sprites").get("front_default").asText();
-            String backSprite = jsonNode.get("sprites").get("back_default").asText();
 
-            return new Pokemon(Name, hp, attack, defense, specialAttack, specialDefense, speed, frontSprite, backSprite);
-
+            if (isShiny) {
+                String frontSprite = jsonNode.get("sprites").get("front_shiny").asText();
+                return new Pokemon(Name, hp, attack, defense, specialAttack, specialDefense, speed, frontSprite, true);
+            } else {
+                String frontSprite = jsonNode.get("sprites").get("front_default").asText();
+                return new Pokemon(Name, hp, attack, defense, specialAttack, specialDefense, speed, frontSprite, false);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -40,10 +45,16 @@ public class PokeApi {
     }
 
     public static Pokemon getRandomPokemon(){
-        int countPokemon = 1025;
-
         int randomPokemon = (int) (Math.random() * countPokemon) + 1;
 
-        return PokeApi.getPokemonById(randomPokemon);
+        boolean isShiny = (int) (Math.random() * 4096) == 0;
+
+        return PokeApi.getPokemonById(randomPokemon, isShiny);
+    }
+
+    public static Pokemon getRandomShinyPokemon(){
+        int randomPokemon = (int) (Math.random() * countPokemon) + 1;
+
+        return PokeApi.getPokemonById(randomPokemon, true);
     }
 }

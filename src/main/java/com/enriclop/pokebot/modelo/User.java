@@ -15,9 +15,13 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    private String twitchId;
+
     private String username;
 
     private Integer score;
+
+    private String avatar;
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "user", orphanRemoval = true)
     private List<Pokemon> pokemons = new ArrayList<>();
@@ -25,9 +29,15 @@ public class User {
     public User() {
     }
 
-    public User(String username) {
+    public User(String twitchId ,String username, String avatar) {
+        this.twitchId = twitchId;
         this.username = username;
         this.score = 0;
+        this.avatar = avatar;
+    }
+
+    public void addScore(Integer score) {
+        this.score += score;
     }
 
 }

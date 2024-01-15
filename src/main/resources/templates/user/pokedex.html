@@ -9,7 +9,6 @@
       font-family: 'Arial', sans-serif;
       text-align: center;
       background-color: #f2f2f2;
-
       background-image: url("https://i.pinimg.com/736x/98/c1/5a/98c15a449a1166ec23f5c9f1f63995dd.jpg");
     }
 
@@ -25,6 +24,18 @@
     .pokemon-name {
       font-size: 18px;
       font-weight: bold;
+      display: inline-block;
+    }
+
+    .pokemon-pos {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .shiny-indicator {
+      width: 18px;
+      height: 18px;
+      margin-left: 5px;
     }
 
     .pokemon-stats {
@@ -39,23 +50,26 @@
 </head>
 <body>
 
-  <h1>Caja de Pokémon</h1>
-  <h1 th:text="${user.getUsername()}"></h1>
+<h1>Caja de Pokémon</h1>
+<h1 th:text="${user.getUsername()}"></h1>
 
+<div class="pokemon-box" th:each="pokemon, posStat: ${user.getPokemons()}">
 
-  <div class="pokemon-box" th:each="pokemon: ${user.getPokemons()}">
-    <img th:src="${pokemon.getFrontSprite()}" th:alt="${pokemon.getId()}" class="pokemon-sprite">
-    <div class="pokemon-name" th:text="${'Pokemon ' + pokemon.getPosition() + ':'}"></div>
-    <div class="pokemon-name" th:text="${pokemon.getName()}"></div>
-    <div class="pokemon-stats">
-      <p th:text="${'HP: ' + pokemon.getHp()}"></p>
-      <p th:text="${'ATK: ' + pokemon.getAttack()}"></p>
-      <p th:text="${'DEF: ' + pokemon.getDefense()}"></p>
-      <p th:text="${'SPATK: ' + pokemon.getSpecialAttack()}"></p>
-      <p th:text="${'SPDEF: ' + pokemon.getSpecialDefense()}"></p>
-      <p th:text="${'SPD: ' + pokemon.getSpeed()}"></p>
-    </div>
+  <img th:src="${pokemon.getFrontSprite()}" th:alt="${pokemon.getId()}" class="pokemon-sprite">
+  <div class="pokemon-pos" th:text="${'Pokemon ' + posStat.count + ':'}"></div>
+  <div class="pokemon-name">
+    <span th:text="${pokemon.getName()}"></span>
+    <img th:if="${pokemon.isShiny()}" src="https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/e8ddc4da-23dd-4502-b65b-378c9cfe5efa/dffxr02-6c8740da-31e4-4229-8312-a677c4d6cbcd.png/v1/fill/w_894,h_894/shiny_symbol_pokemon_swsh_bdsp_by_jormxdos_dffxr02-pre.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MTI4MCIsInBhdGgiOiJcL2ZcL2U4ZGRjNGRhLTIzZGQtNDUwMi1iNjViLTM3OGM5Y2ZlNWVmYVwvZGZmeHIwMi02Yzg3NDBkYS0zMWU0LTQyMjktODMxMi1hNjc3YzRkNmNiY2QucG5nIiwid2lkdGgiOiI8PTEyODAifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.4ZTGpwWQ7hSJOJsoY7SfFXXs2fF43cyCAza2qrQtpps" class="shiny-indicator">
   </div>
+  <div class="pokemon-stats">
+    <p th:text="${'HP: ' + pokemon.getHp()}"></p>
+    <p th:text="${'ATK: ' + pokemon.getAttack()}"></p>
+    <p th:text="${'DEF: ' + pokemon.getDefense()}"></p>
+    <p th:text="${'SPATK: ' + pokemon.getSpecialAttack()}"></p>
+    <p th:text="${'SPDEF: ' + pokemon.getSpecialDefense()}"></p>
+    <p th:text="${'SPD: ' + pokemon.getSpeed()}"></p>
+  </div>
+</div>
 
 </body>
 </html>

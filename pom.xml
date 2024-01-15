@@ -69,7 +69,6 @@
 			<version>2.2.7</version>
 		</dependency>
 
-
 		<dependency>
 			<groupId>com.github.twitch4j</groupId>
 			<artifactId>twitch4j</artifactId>

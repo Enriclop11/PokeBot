@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: transparent;
+    }
+
+    .arena {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 800px;
+      height: 400px;
+      background-image: url("https://i.pinimg.com/736x/98/c1/5a/98c15a449a1166ec23f5c9f1f63995dd.jpg");
+      background-size: cover;
+      border: 2px solid #000;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .pokemon {
+      width: 200px;
+      height: auto;
+    }
+
+    .pokemon-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #fff;
+    }
+
+
+  </style>
+  <title>Arena Pokémon</title>
+</head>
+<body>
+<div class="arena" id="pokemonArena">
+  <div class="pokemon-info" id="pokemonInfo1">
+    <img class="pokemon" src="" alt="Pokemon 1">
+    <p id="pokemonName1"></p>
+    <p id="pokemonHP1"></p>
+  </div>
+  <div class="pokemon-info" id="pokemonInfo2">
+    <img class="pokemon" src="" alt="Pokemon 2">
+    <p id="pokemonName2"></p>
+    <p id="pokemonHP2"></p>
+  </div>
+</div>
+
+<script>
+    var combatInterval;
+    var pokemon1;
+    var pokemon2;
+
+    function getPokemonCombatData() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            try {
+                if (this.readyState === 4 && this.status === 200) {
+                    const combatData = JSON.parse(this.responseText);
+
+                    console.log("combatData", combatData)
+
+                    if (combatData !== null) {
+                        clearInterval(combatInterval);
+                        showScreen();
+                        this.combatData = combatData;
+                        pokemon1 = combatData[0];
+                        pokemon2 = combatData[1];
+                        startCombat(combatData);
+                    } else {
+                        clearScreen();
+                    }
+                }
+
+            } catch (e) {
+                clearScreen();
+            }
+        };
+        xhttp.open("GET", "/pokemon/combat", true);
+        xhttp.send();
+    }
+
+    function startCombat(combatData) {
+      console.log("Comienza el combate:", combatData);
+
+      pokemon1.currentHP = pokemon1.hp;
+      pokemon2.currentHP = pokemon2.hp;
+
+      updatePokemonInfo(1, pokemon1);
+      updatePokemonInfo(2, pokemon2);
+
+      let turn = 0;
+      combatInterval = setInterval(() => {
+        if (pokemon1.currentHP > 0 && pokemon2.currentHP > 0) {
+        turn++;
+
+          if (turn % 2 === 0) {
+            attack(pokemon1, pokemon2);
+          } else {
+            attack(pokemon2, pokemon1);
+          }
+
+          updatePokemonInfo(1, pokemon1);
+          updatePokemonInfo(2, pokemon2);
+
+        } else {
+          endCombat();
+        }
+      }, 10000);
+    }
+
+    function endCombat() {
+      clearInterval(combatInterval);
+      clearScreen();
+
+
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            try {
+                if (this.readyState === 4 && this.status === 200) {
+                    console.log("Combat ended");
+                }
+
+            } catch (e) {
+                console.log("Error ending combat");
+            }
+        };
+        xhttp.open("POST", "/pokemon/combat", true);
+        xhttp.send();
+
+      combatInterval = setInterval(getPokemonCombatData, 5000);
+    }
+
+    function attack(attacker, defender) {
+      var attack = attacker.attack * (100.0 / (defender.defense));
+      defender.currentHP -= attack;
+
+      if (defender.currentHP < 0) {
+        defender.currentHP = 0;
+      }
+    }
+
+    function showScreen() {
+        document.getElementById('pokemonArena').style.display = 'flex';
+    }
+
+    function clearScreen() {
+        document.getElementById('pokemonArena').style.display = 'none';
+    }
+
+    function updatePokemonInfo(pokemonIndex, pokemon) {
+        const pokemonInfo = document.getElementById(`pokemonInfo${pokemonIndex}`);
+        const pokemonImage = pokemonInfo.querySelector('.pokemon');
+        const pokemonName = pokemonInfo.querySelector('#pokemonName' + pokemonIndex);
+        const pokemonHP = pokemonInfo.querySelector('#pokemonHP' + pokemonIndex);
+
+        pokemonImage.src = pokemon.frontSprite;
+        pokemonName.textContent = pokemon.name;
+        pokemonHP.textContent = `HP: ${pokemon.currentHP}/${pokemon.hp}`;
+    }
+
+    getPokemonCombatData();
+    combatInterval = setInterval(getPokemonCombatData, 5000);
+</script>
+
+</body>
+</html>

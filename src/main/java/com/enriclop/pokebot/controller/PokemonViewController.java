@@ -45,4 +45,29 @@ public class PokemonViewController {
         model.addAttribute("user", user);
         return "user/pokedex";
     }
+
+    @GetMapping("/pokemon/{username}/shiny")
+    public String shinyPokemon(@PathVariable String username, Model model) {
+        User user = userService.getUserByUsername(username);
+
+        if (user == null) {
+            return "user/pokedex";
+        }
+
+        user.setUsername(Utilities.firstLetterToUpperCase(user.getUsername()));
+
+        user.getPokemons().forEach(pokemon -> {
+            pokemon.setName(Utilities.firstLetterToUpperCase(pokemon.getName()));
+        });
+
+        user.getPokemons().removeIf(pokemon -> !pokemon.isShiny());
+
+        model.addAttribute("user", user);
+        return "user/pokedex";
+    }
+
+    @GetMapping("/battle")
+    public String battle() {
+        return "pokemon/combat";
+    }
 }

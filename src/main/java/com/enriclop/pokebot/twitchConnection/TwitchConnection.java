@@ -14,6 +14,7 @@ import com.github.twitch4j.chat.events.channel.ChannelMessageEvent;
 import com.github.twitch4j.common.events.domain.EventUser;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,8 +22,12 @@ import java.util.List;
 @Component
 @Getter
 @Setter
-public class TwitchConnection {
+public class TwitchConnection extends Thread {
+
+    @Autowired
     UserService userService;
+
+    @Autowired
     PokemonService pokemonService;
 
     Pokemon wildPokemon;
@@ -32,9 +37,7 @@ public class TwitchConnection {
 
     Combat activeCombat;
 
-    public TwitchConnection(UserService userService, PokemonService pokemonService) {
-        this.userService = userService;
-        this.pokemonService = pokemonService;
+    public TwitchConnection() {
         connect();
     }
 
@@ -52,6 +55,10 @@ public class TwitchConnection {
          commands();
     }
 
+    public void sendMessage(String message) {
+        twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME, message);
+    }
+
     public void commands() {
         eventManager = twitchClient.getEventManager();
 
@@ -61,21 +68,31 @@ public class TwitchConnection {
             String command = event.getMessage().split(" ")[0];
 
             switch (command) {
-                case "!cum" ->  twitchClient.getChat().sendMessage(event.getChannel().getName(), "Me corro en " + event.getUser().getName());
                 case "!leaderboard" -> leaderboard();
                 case "!pokemon" -> spawnPokemon();
                 case "!catch" -> catchPokemon(event.getUser());
                 case "!combat" -> startCombat(event);
                 case "!mypokemon" -> lookPokemon(event);
-                case "!help" -> twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Comandos: !leaderboard !pokemon !catch !combat !mypokemon");
+                case "!refreshusername" -> refreshUsername(event.getUser());
+                case "!help" -> twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Comandos: !leaderboard !pokemon !catch !combat !mypokemon !refreshusername !help");
             }
         });
     }
 
     public void start (EventUser sender) {
-        if (userService.getUserByUsername(sender.getName()) == null) {
-            User newUser = new User(sender.getName().toLowerCase());
-            userService.saveUser(newUser);
+        if (userService.getUserByTwitchId(sender.getId()) == null) {
+            twitchClient.getHelix().getUsers(null, List.of(sender.getId()), null).execute().getUsers().forEach(user -> {
+                User newUser = new User(user.getId(), user.getDisplayName().toLowerCase(), user.getProfileImageUrl());
+                userService.saveUser(newUser);
+            });
+        }
+    }
+
+    public void refreshUsername (EventUser sender) {
+        User user = userService.getUserByTwitchId(sender.getId());
+        if (user != null && !user.getUsername().equals(sender.getName().toLowerCase())) {
+            user.setUsername(sender.getName().toLowerCase());
+            userService.saveUser(user);
         }
     }
 
@@ -119,7 +136,7 @@ public class TwitchConnection {
             twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Has capturado un " + Utilities.firstLetterToUpperCase(wildPokemon.getName()) + " salvaje!");
 
             start(sender);
-            User user = userService.getUserByUsername(sender.getName());
+            User user = userService.getUserByTwitchId(sender.getId());
             wildPokemon.setUser(user);
             pokemonService.savePokemon(wildPokemon);
 
@@ -148,7 +165,7 @@ public class TwitchConnection {
         User player2;
 
         try {
-            player1 = userService.getUserByUsername(event.getUser().getName());
+            player1 = userService.getUserByTwitchId(event.getUser().getId());
         } catch (Exception e) {
             twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"No tienes ningun pokemon!");
             return;
@@ -156,6 +173,11 @@ public class TwitchConnection {
 
         try {
             player2 = userService.getUserByUsername(event.getMessage().split(" ")[1]);
+
+            if (player2 == null) {
+                twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"El usuario no existe!");
+                return;
+            }
         } catch (Exception e) {
             twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"El usuario no existe!");
             return;

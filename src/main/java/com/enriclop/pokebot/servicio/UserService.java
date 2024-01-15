@@ -25,6 +25,10 @@ public class UserService {
         return userRepository.findByUsernameLike(username);
     }
 
+    public User getUserByTwitchId(String twitchId) {
+        return userRepository.findByTwitchIdLike(twitchId);
+    }
+
     public User saveUser(User user) {
         return userRepository.save(user);
     }
