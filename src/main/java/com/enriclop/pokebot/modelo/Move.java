@@ -2,6 +2,7 @@ package com.enriclop.pokebot.modelo;
 
 
 import com.enriclop.pokebot.enums.Types;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -29,6 +30,7 @@ public class Move {
 
     @ManyToOne
     @JoinColumn(name = "pokemon_id")
+    @JsonIgnore
     private Pokemon pokemon;
 
     public Move() {

@@ -4,6 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        .navigation {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .navigation select {
+            padding: 5px;
+            font-size: 16px;
+        }
+
+        .navigation option {
+            font-size: 14px;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f5f5f5;
@@ -61,7 +75,19 @@
     <title>Leaderboard Pokémon</title>
 </head>
 <body>
+
+
+
 <h2>Leaderboard Pokémon</h2>
+
+<div class="navigation">
+    <label for="filterDropdown">Filtros:</label>
+    <select id="filterDropdown" onchange="handleFilterChange(this)">
+        <option value="/leaderboard">Pokémon</option>
+        <option value="/leaderboard/score">Score</option>
+    </select>
+</div>
+
 <table>
     <thead>
     <tr>
@@ -92,6 +118,28 @@
     </tr>
     <!-- Puedes repetir este patrón para más usuarios -->
     </tbody>
+
 </table>
+
+    <script>
+        function handleFilterChange(dropdown) {
+            window.location.href = dropdown.options[dropdown.selectedIndex].value;
+        }
+
+        // Seleccionar la opción correcta basada en la URL actual
+        document.addEventListener('DOMContentLoaded', function() {
+            var currentPath = window.location.pathname;
+            var dropdown = document.getElementById('filterDropdown');
+
+            for (var i = 0; i < dropdown.options.length; i++) {
+                if (dropdown.options[i].value === currentPath) {
+                    dropdown.selectedIndex = i;
+                    break;
+                }
+            }
+        });
+    </script>
+
+
 </body>
 </html>

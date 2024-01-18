@@ -27,4 +27,17 @@ public class UserViewController {
 
         return "user/leaderboard";
     }
+
+    @GetMapping ("/leaderboard/score")
+    public String leaderboardScore(Model model) {
+        List<User> users = userService.getUsers();
+        users.forEach(user -> {
+            user.setUsername(user.getUsername().substring(0, 1).toUpperCase() + user.getUsername().substring(1));
+        });
+        users.sort((o1, o2) -> o2.getScore() - o1.getScore());
+
+        model.addAttribute("users", users);
+
+        return "user/leaderboard";
+    }
 }
