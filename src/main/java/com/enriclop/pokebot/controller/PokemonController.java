@@ -36,9 +36,12 @@ public class PokemonController {
 
     @GetMapping("/pokemon/combat")
     public String getCombat() {
-        if (twitchConnection.getActiveCombat() !=  null && twitchConnection.getActiveCombat().getOrder() != null)
+        if (twitchConnection.getActiveCombat() != null && !twitchConnection.getActiveCombat().getStarted() && twitchConnection.getActiveCombat().getAccepted()) {
+            twitchConnection.getActiveCombat().startCombat();
+            return null;
+        } else if (twitchConnection.getActiveCombat() !=  null && twitchConnection.getActiveCombat().getOrder() != null) {
             return twitchConnection.getActiveCombat().getOrder().toString();
-        else
+        } else
             return null;
     }
 
@@ -47,5 +50,4 @@ public class PokemonController {
         twitchConnection.sendMessage(twitchConnection.getActiveCombat().getWinner().getUsername() + " ha ganado el combate!");
         twitchConnection.getActiveCombat().endCombat();
     }
-
 }

@@ -23,8 +23,14 @@ public class User {
 
     private String avatar;
 
-    @OneToMany(fetch = FetchType.EAGER, mappedBy = "user", orphanRemoval = true)
+
+
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "user", orphanRemoval = true, cascade = CascadeType.ALL)
     private List<Pokemon> pokemons = new ArrayList<>();
+
+    @OneToOne(orphanRemoval = true, cascade = CascadeType.ALL)
+    @JoinColumn(name = "items_id")
+    private Items items;
 
     public User() {
     }
@@ -34,6 +40,8 @@ public class User {
         this.username = username;
         this.score = 0;
         this.avatar = avatar;
+
+        this.items = new Items();
     }
 
     public void addScore(Integer score) {

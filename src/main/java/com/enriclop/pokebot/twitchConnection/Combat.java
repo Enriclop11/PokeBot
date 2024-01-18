@@ -1,7 +1,10 @@
 package com.enriclop.pokebot.twitchConnection;
 
+import com.enriclop.pokebot.PokeLogic.TableType;
+import com.enriclop.pokebot.modelo.Move;
 import com.enriclop.pokebot.modelo.Pokemon;
 import com.enriclop.pokebot.modelo.User;
+import com.enriclop.pokebot.dto.PokemonCombat;
 import com.enriclop.pokebot.servicio.UserService;
 import com.enriclop.pokebot.utilities.Timer;
 import com.enriclop.pokebot.utilities.Utilities;
@@ -10,6 +13,7 @@ import com.github.twitch4j.chat.events.channel.ChannelMessageEvent;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -26,7 +30,7 @@ public class Combat extends Thread{
     Pokemon pokemon1;
     Pokemon pokemon2;
 
-    List<Pokemon> order;
+    List<PokemonCombat> order;
 
     Boolean accepted = false;
 
@@ -36,23 +40,7 @@ public class Combat extends Thread{
 
     User winner;
 
-
-    private static class PokemonCombat extends Pokemon {
-        int currentHp;
-
-        public int getCurrentHp() {
-            return currentHp;
-        }
-
-        public void setCurrentHp(int currentHp) {
-            this.currentHp = currentHp;
-        }
-
-        public PokemonCombat(Pokemon pokemon) {
-            super(pokemon.getName(), pokemon.getHp(), pokemon.getAttack(), pokemon.getDefense(), pokemon.getSpecialAttack(), pokemon.getSpecialDefense(), pokemon.getSpeed(), pokemon.getFrontSprite(), pokemon.isShiny(), pokemon.getUser());
-            currentHp = pokemon.getHp();
-        }
-    }
+    Boolean started = false;
 
 
     public Combat(Pokemon pokemon1, User user2, UserService userService, TwitchClient twitchClient) {
@@ -90,13 +78,12 @@ public class Combat extends Thread{
                 try {
                     int pokemonPosition = Integer.parseInt(event.getMessage().split(" ")[1])-1;
                     pokemon2 = player2.getPokemons().get(pokemonPosition);
+                    accepted = true;
                 } catch (Exception e) {
                     twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + Utilities.firstLetterToUpperCase(player2.getUsername()) + " no tiene un pokemon en esa posicion!");
                     active = false;
                     return;
                 }
-
-                startCombat();
             }
         });
 
@@ -104,28 +91,49 @@ public class Combat extends Thread{
     }
 
     public void startCombat(){
-        order = List.of(pokemon1, pokemon2);
+        started = true;
 
-        if (pokemon1.getSpeed() < pokemon2.getSpeed()) order = List.of(pokemon2, pokemon1);
+        System.out.println("Combat started");
 
-        PokemonCombat pokemon1 = new PokemonCombat(this.order.get(0));
-        PokemonCombat pokemon2 = new PokemonCombat(this.order.get(1));
-
-        while (pokemon1.getCurrentHp() > 0 && pokemon2.getCurrentHp() > 0){
-            attack(pokemon1, pokemon2);
-            if (pokemon2.getCurrentHp() <= 0) break;
-            attack(pokemon2, pokemon1);
+        order = new ArrayList<>();
+        if (pokemon1.getSpeed() > pokemon2.getSpeed()) {
+            order.add(new PokemonCombat(pokemon1));
+            order.add(new PokemonCombat(pokemon2));
+        } else if (pokemon1.getSpeed() < pokemon2.getSpeed()) {
+            order.add(new PokemonCombat(pokemon2));
+            order.add(new PokemonCombat(pokemon1));
+        } else {
+            if (Math.random() < 0.5) {
+                order.add(new PokemonCombat(pokemon1));
+                order.add(new PokemonCombat(pokemon2));
+            } else {
+                order.add(new PokemonCombat(pokemon2));
+                order.add(new PokemonCombat(pokemon1));
+            }
         }
 
-        if (pokemon1.getCurrentHp() <= 0) {
-            winner = pokemon2.getUser();
+        wait(5);
+
+        while (order.get(0).getCurrentHp() > 0 && order.get(1).getCurrentHp() > 0){
+            wait(5);
+            attack(order.get(0), order.get(1));
+            if (order.get(1).getCurrentHp() <= 0) break;
+            wait(5);
+            attack(order.get(1), order.get(0));
+        }
+        wait(10);
+
+        if (order.get(0).getCurrentHp() <= 0) {
+            winner = order.get(1).getUser();
         } else {
-            winner = pokemon1.getUser();
+            winner = order.get(0).getUser();
         }
 
         winner = userService.getUserById(winner.getId());
-        winner.addScore(1);
+        winner.addScore(100);
         userService.saveUser(winner);
+
+        endCombat();
     }
 
     public void endCombat(){
@@ -135,12 +143,76 @@ public class Combat extends Thread{
     }
 
     public void attack(PokemonCombat attacker, PokemonCombat defender){
-        double damage =  attacker.getAttack() * (100.0 / (defender.getDefense()));
-        if (damage < 0) damage = 0;
-        System.out.println((int) damage);
-        defender.setCurrentHp((int) (defender.getCurrentHp() - damage));
+        int move = (int) (Math.random() * attacker.getMoves().size());
+        Move selectedMove = attacker.getMoves().get(move);
 
-        if (defender.getCurrentHp() < 0) defender.setCurrentHp(0);
+        if (selectedMove.getAccuracy() < (int) (Math.random() * 100)) {
+            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME, attacker.getName() + " ha fallado el ataque " + selectedMove.getName() + "!");
+            return;
+        }
+
+        if (selectedMove.getPower() == 0) {
+            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME, attacker.getName() + " ha usado " + selectedMove.getName() + "!");
+            return;
+        }
+
+        double attack = 0;
+        double defense = 0;
+
+        if (selectedMove.getEffectiveAttack().equals("physical")) {
+            attack = attacker.getAttack();
+            defense = defender.getDefense();
+        } else if (selectedMove.getEffectiveAttack().equals("special")) {
+            attack = attacker.getSpecialAttack();
+            defense = defender.getSpecialDefense();
+        } else {
+            System.out.println("Error en el ataque");
+        }
+
+        double damage = 0;
+
+        if (Math.random() < 0.0417 + (selectedMove.getCrit_rate() / 100.0)) {
+            damage = (2*2)/5.0;
+        } else {
+            damage = (2)/5.0;
+        }
+
+        //STAB is the same-type attack bonus. This is equal to 1.5 if the move's type matches any of the user's types, and 1 if otherwise. Internally, it is recognized as an addition of the damage calculated thus far divided by 2, rounded down, then added to the damage calculated thus far.
+        if (attacker.getType() == selectedMove.getType() || attacker.getType2() == selectedMove.getType()) {
+            damage *= 1.5;
+        }
+
+        damage *= selectedMove.getPower();
+        damage *= (attack / defense);
+        damage /= 50.0;
+        damage += 2;
+
+        //calculate type effectiveness
+        damage *= TableType.modifierAgainst(selectedMove.getType(), defender.getType());
+        if (defender.getType2() != null) damage *= TableType.modifierAgainst(selectedMove.getType(), defender.getType2());
+
+        //random is realized as a multiplication by a random uniformly distributed integer between 217 and 255 (inclusive), followed by an integer division by 255. If the calculated damage thus far is 1, random is always 1.
+        damage *= (int) (Math.random() * 39 + 217);
+        damage /= 255.0;
+
+        damage *= 10;
+
+        System.out.println(attacker.getName() + " ha usado " + selectedMove.getName() + "!");
+        System.out.println("Damage: " + damage);
+
+        defender.setCurrentHp((int) (defender.getCurrentHp() - damage));
+        
+        if (defender.getCurrentHp() < 0) {
+            defender.setCurrentHp(0);
+        }
+    }
+
+    private void wait(int seconds) {
+        try {
+            Thread.sleep(1000 * seconds);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
 

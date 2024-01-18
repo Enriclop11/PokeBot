@@ -1,8 +1,11 @@
 package com.enriclop.pokebot.twitchConnection;
 
 import com.enriclop.pokebot.apis.PokeApi;
+import com.enriclop.pokebot.modelo.Items;
 import com.enriclop.pokebot.modelo.Pokemon;
 import com.enriclop.pokebot.modelo.User;
+import com.enriclop.pokebot.servicio.ItemsService;
+import com.enriclop.pokebot.servicio.MoveService;
 import com.enriclop.pokebot.servicio.PokemonService;
 import com.enriclop.pokebot.servicio.UserService;
 import com.enriclop.pokebot.utilities.Utilities;
@@ -29,6 +32,12 @@ public class TwitchConnection extends Thread {
 
     @Autowired
     PokemonService pokemonService;
+
+    @Autowired
+    ItemsService itemsService;
+
+    @Autowired
+    MoveService moveService;
 
     Pokemon wildPokemon;
 
@@ -70,11 +79,13 @@ public class TwitchConnection extends Thread {
             switch (command) {
                 case "!leaderboard" -> leaderboard();
                 case "!pokemon" -> spawnPokemon();
-                case "!catch" -> catchPokemon(event.getUser());
+                case "!catch" -> trowPokeball(event);
                 case "!combat" -> startCombat(event);
                 case "!mypokemon" -> lookPokemon(event);
                 case "!refreshusername" -> refreshUsername(event.getUser());
-                case "!help" -> twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Comandos: !leaderboard !pokemon !catch !combat !mypokemon !refreshusername !help");
+                case "!buy" -> buyItem(event);
+                case "!items" -> lookItems(event);
+                case "!points" -> myPoints(event);
             }
         });
     }
@@ -89,10 +100,14 @@ public class TwitchConnection extends Thread {
     }
 
     public void refreshUsername (EventUser sender) {
-        User user = userService.getUserByTwitchId(sender.getId());
-        if (user != null && !user.getUsername().equals(sender.getName().toLowerCase())) {
-            user.setUsername(sender.getName().toLowerCase());
-            userService.saveUser(user);
+        try {
+            User user = userService.getUserByTwitchId(sender.getId());
+            if (user != null && !user.getUsername().equals(sender.getName().toLowerCase())) {
+                user.setUsername(sender.getName().toLowerCase());
+                userService.saveUser(user);
+            }
+        } catch (Exception e) {
+            start(sender);
         }
     }
 
@@ -119,45 +134,93 @@ public class TwitchConnection extends Thread {
         if (newPokemon != null) {
             wildPokemon = newPokemon;
 
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Ha aparecido un " + Utilities.firstLetterToUpperCase(wildPokemon.getName()) + " salvaje!");
+            sendMessage("Ha aparecido un " + Utilities.firstLetterToUpperCase(wildPokemon.getName()) + " salvaje!");
         }
     }
 
-    public void catchPokemon(EventUser sender){
+    public void trowPokeball(ChannelMessageEvent event){
+        start(event.getUser());
+
         if (wildPokemon != null) {
 
-            int random = (int) (Math.random() * 100) + 1;
+            String pokeball;
 
-            if (random < 30) {
-                twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"No has podido capturar el " + Utilities.firstLetterToUpperCase(wildPokemon.getName()) + " salvaje!");
-                return;
+            try {
+                pokeball = event.getMessage().split(" ")[1];
+            } catch (Exception e) {
+                pokeball = "pokeball";
             }
 
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Has capturado un " + Utilities.firstLetterToUpperCase(wildPokemon.getName()) + " salvaje!");
+            Items pokeballs = userService.getUserByTwitchId(event.getUser().getId()).getItems();
 
-            start(sender);
-            User user = userService.getUserByTwitchId(sender.getId());
+            switch (pokeball) {
+                case "superball" -> {
+                    if (pokeballs.getSuperball() > 0) {
+                        pokeballs.useSuperball();
+                        itemsService.saveItem(pokeballs);
+                        catchPokemon(event, 70);
+                    } else {
+                        sendMessage("No tienes Super Balls!");
+                    }
+                }
+                case "ultraball" -> {
+                    if (pokeballs.getUltraball() > 0) {
+                        pokeballs.useUltraball();
+                        itemsService.saveItem(pokeballs);
+                        catchPokemon(event, 50);
+                    } else {
+                        sendMessage("No tienes Ultra Balls!");
+                    }
+                }
+                case "masterball" -> {
+                    if (pokeballs.getMasterball() > 0) {
+                        pokeballs.useMasterball();
+                        itemsService.saveItem(pokeballs);
+                        catchPokemon(event, 0);
+                    } else {
+                        sendMessage("No tienes Master Balls!");
+                    }
+                }
+                default -> catchPokemon(event, 100);
+            }
+
+        } else {
+            sendMessage("No hay ningun pokemon salvaje!");
+        }
+    }
+
+    public void catchPokemon(ChannelMessageEvent event, int probability) {
+        int random = (int) (Math.random() * probability) + 1;
+
+        if (random < 30) {
+            User user = userService.getUserByTwitchId(event.getUser().getId());
+
+
             wildPokemon.setUser(user);
             pokemonService.savePokemon(wildPokemon);
 
+
+            sendMessage("Has capturado un " + Utilities.firstLetterToUpperCase(wildPokemon.getName()) + "!");
+
             wildPokemon = null;
         } else {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"No hay ningun pokemon salvaje!");
+            sendMessage("El " + Utilities.firstLetterToUpperCase(wildPokemon.getName()) + " ha escapado!");
         }
+
     }
 
     public void startCombat(ChannelMessageEvent event) {
 
         if (activeCombat != null && activeCombat.active) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Ya hay un combate en curso!");
+            sendMessage("Ya hay un combate en curso!");
             return;
         }
 
         if (event.getMessage().split(" ").length < 2) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Elige un usuario para combatir!");
+            sendMessage("Elige un usuario para combatir!");
             return;
         } else if (event.getMessage().split(" ").length < 3) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Elige un pokemon para combatir!");
+            sendMessage("Elige un pokemon para combatir!");
             return;
         }
 
@@ -167,7 +230,7 @@ public class TwitchConnection extends Thread {
         try {
             player1 = userService.getUserByTwitchId(event.getUser().getId());
         } catch (Exception e) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"No tienes ningun pokemon!");
+            sendMessage("No tienes ningun pokemon!");
             return;
         }
 
@@ -175,22 +238,22 @@ public class TwitchConnection extends Thread {
             player2 = userService.getUserByUsername(event.getMessage().split(" ")[1]);
 
             if (player2 == null) {
-                twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"El usuario no existe!");
+                sendMessage("El usuario no existe!");
                 return;
             }
         } catch (Exception e) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"El usuario no existe!");
+            sendMessage("El usuario no existe!");
             return;
         }
 
         if (player1 == player2) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"No puedes combatir contra ti mismo!");
+            sendMessage("No puedes combatir contra ti mismo!");
             return;
         } else if (player1.getPokemons().size() == 0) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"No tienes ningun pokemon!");
+            sendMessage("No tienes ningun pokemon!");
             return;
         } else if (player2.getPokemons().size() == 0) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"El " +  Utilities.firstLetterToUpperCase(player2.getUsername()) + " no tiene ningun pokemon!");
+            sendMessage("El " +  Utilities.firstLetterToUpperCase(player2.getUsername()) + " no tiene ningun pokemon!");
             return;
         }
 
@@ -200,7 +263,7 @@ public class TwitchConnection extends Thread {
             int pokemonPosition = Integer.parseInt(event.getMessage().split(" ")[2])-1;
             pokemon1 = player1.getPokemons().get(pokemonPosition);
         } catch (Exception e) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"El pokemon no existe!");
+            sendMessage("El pokemon no existe!");
             return;
         }
 
@@ -209,7 +272,73 @@ public class TwitchConnection extends Thread {
     }
 
     public void lookPokemon (ChannelMessageEvent event){
-        twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"Tus pokemon: " + SETTINGS.DOMAIN + "/pokemon/" + event.getUser().getName().toLowerCase());
+        start(event.getUser());
+        sendMessage("Tus pokemon: " + SETTINGS.DOMAIN + "/pokemon/" + event.getUser().getName().toLowerCase());
+    }
+
+    public void buyItem(ChannelMessageEvent event) {
+        start(event.getUser());
+
+        String item = event.getMessage().split(" ")[1];
+
+        User user = userService.getUserByTwitchId(event.getUser().getId());
+
+        Items items = user.getItems();
+
+        switch (item) {
+            case "superball" -> {
+                if (user.getScore() >= 500) {
+                    items.addSuperball();
+                    user.addScore(-500);
+                    itemsService.saveItem(items);
+                    userService.saveUser(user);
+                    sendMessage("Has comprado una Superball!");
+                } else {
+                    sendMessage("No tienes suficiente dinero!");
+                }
+            }
+            case "ultraball" -> {
+                if (user.getScore() >= 1000) {
+                    items.addUltraball();
+                    user.addScore(-1000);
+                    itemsService.saveItem(items);
+                    userService.saveUser(user);
+                    sendMessage("Has comprado una Ultraball!");
+                } else {
+                    sendMessage("No tienes suficiente dinero!");
+                }
+            }
+            case "masterball" -> {
+                if (user.getScore() >= 10000) {
+                    items.addMasterball();
+                    user.addScore(-10000);
+                    itemsService.saveItem(items);
+                    userService.saveUser(user);
+                    sendMessage("Has comprado una Masterball!");
+                } else {
+                    sendMessage("No tienes suficiente dinero!");
+                }
+            }
+            default -> sendMessage("El item no existe!");
+        }
+    }
+
+    public void lookItems(ChannelMessageEvent event) {
+        start(event.getUser());
+
+        User user = userService.getUserByTwitchId(event.getUser().getId());
+
+        Items items = user.getItems();
+
+        sendMessage("Tus items: Superball: " + items.getSuperball() + " Ultraball: " + items.getUltraball() + " Masterball: " + items.getMasterball());
+    }
+
+    public void myPoints(ChannelMessageEvent event) {
+        start(event.getUser());
+
+        User user = userService.getUserByTwitchId(event.getUser().getId());
+
+        sendMessage("Tienes " + user.getScore() + " puntos!");
     }
 
     /*
