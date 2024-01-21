@@ -1,4 +1,4 @@
-package com.enriclop.pokebot.PokeLogic;
+package com.enriclop.pokebot.pokeLogic;
 
 import com.enriclop.pokebot.enums.Types;
 

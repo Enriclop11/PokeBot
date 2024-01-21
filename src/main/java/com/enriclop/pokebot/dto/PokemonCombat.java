@@ -1,7 +1,13 @@
 package com.enriclop.pokebot.dto;
 
 import com.enriclop.pokebot.modelo.Pokemon;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
+@AllArgsConstructor
+@Getter
+@Setter
 public class PokemonCombat extends Pokemon {
 
     int currentHp;

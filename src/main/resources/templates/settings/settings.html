@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+</head>
+<body>
+
+<h1>Settings</h1>
+
+<form action="/settings" method="post" th:object="${settings}">
+
+    <div class="spawn-settings" >
+        <h3>Spawn Settings</h3>
+
+        <label for="cdMinutes">Cooldown Minutes</label>
+        <input type="number" name="cdMinutes" id="cdMinutes" th:value="${settings.getCdMinutes()}">
+
+        <br>
+
+        <label for="spawnActive">Spawn Active</label>
+        <input type="checkbox" name="spawnActive" id="spawnActive" th:checked="${settings.isSpawnActive()}">
+    </div>
+
+    <div class="Connection Settings">
+        <h3>Connection Settings</h3>
+
+        <!-- channelName, botUsername, oauthToken -->
+        <label for="channelName">Channel Name</label>
+        <input type="text" name="channelName" id="channelName" th:value="${settings.getChannelName()}">
+
+        <br>
+
+        <label for="botUsername">Bot Username</label>
+        <input type="text" name="botUsername" id="botUsername" th:value="${settings.getBotUsername()}">
+
+        <br>
+
+        <label for="oAuthToken">OAuth Token</label>
+        <input type="text" name="oAuthToken" id="oAuthToken">
+
+        <br>
+        <br>
+
+        <label for="domain">Domain</label>
+        <input type="text" name="domain" id="domain" th:value="${settings.getDomain()}">
+    </div>
+
+    <div class="Command Settings">
+        <h3>Command Settings</h3>
+
+        <a href="/settings/commands">
+            <button type="button">Edit Commands</button>
+        </a>
+
+    </div>
+
+    <div class="Admin Settings">
+        <h3>Admin Settings</h3>
+
+        <a href="/settings/admin">
+            <button type="button">Edit Admin</button>
+        </a>
+
+    </div>
+
+    <input type="submit" value="Save">
+
+</form>
+
+</body>
+</html>

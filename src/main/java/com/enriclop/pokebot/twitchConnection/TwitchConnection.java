@@ -1,9 +1,11 @@
 package com.enriclop.pokebot.twitchConnection;
 
 import com.enriclop.pokebot.apis.PokeApi;
+import com.enriclop.pokebot.dto.Command;
 import com.enriclop.pokebot.modelo.Items;
 import com.enriclop.pokebot.modelo.Pokemon;
 import com.enriclop.pokebot.modelo.User;
+import com.enriclop.pokebot.security.Settings;
 import com.enriclop.pokebot.servicio.ItemsService;
 import com.enriclop.pokebot.servicio.MoveService;
 import com.enriclop.pokebot.servicio.PokemonService;
@@ -39,33 +41,58 @@ public class TwitchConnection extends Thread {
     @Autowired
     MoveService moveService;
 
+    @Autowired
+    Settings settings;
+
     Pokemon wildPokemon;
 
     TwitchClient twitchClient;
+
     EventManager eventManager;
 
     Combat activeCombat;
 
+    Spawn spawn;
+
+    List<Command> commands;
+
     public TwitchConnection() {
-        connect();
+        settings = new Settings();
+
+        commands = List.of(
+                new Command("leaderboard", true),
+                new Command("pokemon", true),
+                new Command("catch", true),
+                new Command("combat", true),
+                new Command("mypokemon", true),
+                new Command("refreshusername", true),
+                new Command("buy", true),
+                new Command("items", true),
+                new Command("points", true),
+                new Command("help", true)
+        );
     }
 
     public void connect() {
 
+        if (twitchClient != null) {
+            twitchClient.close();
+        }
+
          twitchClient = TwitchClientBuilder.builder()
-                 .withDefaultAuthToken(new OAuth2Credential(SETTINGS.BOT_USERNAME, SETTINGS.OAUTH_TOKEN))
+                 .withDefaultAuthToken(new OAuth2Credential(settings.botUsername, settings.oAuthToken))
                  .withEnableHelix(true)
                  .withEnableChat(true)
-                 .withChatAccount(new OAuth2Credential(SETTINGS.BOT_USERNAME, SETTINGS.OAUTH_TOKEN))
+                 .withChatAccount(new OAuth2Credential(settings.botUsername, settings.oAuthToken))
                  .build();
 
-         twitchClient.getChat().joinChannel(SETTINGS.CHANNEL_NAME);
+         twitchClient.getChat().joinChannel(settings.channelName);
 
          commands();
     }
 
     public void sendMessage(String message) {
-        twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME, message);
+        twitchClient.getChat().sendMessage(settings.channelName, message);
     }
 
     public void commands() {
@@ -76,18 +103,43 @@ public class TwitchConnection extends Thread {
 
             String command = event.getMessage().split(" ")[0];
 
-            switch (command) {
-                case "!leaderboard" -> leaderboard();
-                case "!pokemon" -> spawnPokemon();
-                case "!catch" -> trowPokeball(event);
-                case "!combat" -> startCombat(event);
-                case "!mypokemon" -> lookPokemon(event);
-                case "!refreshusername" -> refreshUsername(event.getUser());
-                case "!buy" -> buyItem(event);
-                case "!items" -> lookItems(event);
-                case "!points" -> myPoints(event);
+            if (command.startsWith("!")) {
+                command = command.substring(1);
+            } else {
+                return;
             }
+
+            String finalCommand = command.toLowerCase();
+            useCommand(commands.stream().filter(c -> c.getName().equals(finalCommand)).findFirst().orElse(null), event);
         });
+    }
+
+    public void useCommand(Command command, ChannelMessageEvent event) {
+
+        if (command == null) return;
+        if (!command.isActive()) return;
+
+        switch (command.getName()) {
+            case "leaderboard" -> leaderboard();
+            case "pokemon" -> spawnPokemon();
+            case "catch" -> trowPokeball(event);
+            case "combat" -> startCombat(event);
+            case "mypokemon" -> lookPokemon(event);
+            case "refreshusername" -> refreshUsername(event.getUser());
+            case "buy" -> buyItem(event);
+            case "items" -> lookItems(event);
+            case "points" -> myPoints(event);
+            case "help" -> sendMessage("Comandos: !leaderboard !pokemon !catch !combat !mypokemon !refreshusername !buy !items !points");
+        }
+    }
+
+    public void setSpawn(Boolean active, int cdMinutes) {
+        if (active) {
+            spawn = new Spawn(this, cdMinutes);
+            spawn.start();
+        } else {
+            if (spawn != null) spawn.active = false;
+        }
     }
 
     public void start (EventUser sender) {
@@ -125,7 +177,7 @@ public class TwitchConnection extends Thread {
             leaderboard.append ((users.indexOf(user) + 1) + ". " + user.getUsername() + " " + user.getPokemons().size() + " Pokemon ");
         }
 
-        twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,leaderboard.toString());
+        twitchClient.getChat().sendMessage(settings.channelName,leaderboard.toString());
     }
 
     public void spawnPokemon() {
@@ -204,7 +256,7 @@ public class TwitchConnection extends Thread {
 
             wildPokemon = null;
         } else {
-            sendMessage("El " + Utilities.firstLetterToUpperCase(wildPokemon.getName()) + " ha escapado!");
+            sendMessage("El " + Utilities.firstLetterToUpperCase(wildPokemon.getName()) + " se ha zafado de la pokeball!");
         }
 
     }
@@ -235,6 +287,10 @@ public class TwitchConnection extends Thread {
         }
 
         try {
+            if (event.getMessage().split(" ")[1].startsWith("@")) {
+                event.getMessage().split(" ")[1] = event.getMessage().split(" ")[1].substring(1);
+            }
+
             player2 = userService.getUserByUsername(event.getMessage().split(" ")[1]);
 
             if (player2 == null) {
@@ -267,13 +323,13 @@ public class TwitchConnection extends Thread {
             return;
         }
 
-        activeCombat = new Combat(pokemon1, player2, userService, twitchClient);
+        activeCombat = new Combat(pokemon1, player2, userService, twitchClient, settings);
         activeCombat.start();
     }
 
     public void lookPokemon (ChannelMessageEvent event){
         start(event.getUser());
-        sendMessage("Tus pokemon: " + SETTINGS.DOMAIN + "/pokemon/" + event.getUser().getName().toLowerCase());
+        sendMessage("Tus pokemon: " + settings.domain + "/pokemon/" + event.getUser().getName().toLowerCase());
     }
 
     public void buyItem(ChannelMessageEvent event) {
@@ -287,9 +343,9 @@ public class TwitchConnection extends Thread {
 
         switch (item) {
             case "superball" -> {
-                if (user.getScore() >= 500) {
+                if (user.getScore() >= 100) {
                     items.addSuperball();
-                    user.addScore(-500);
+                    user.addScore(-100);
                     itemsService.saveItem(items);
                     userService.saveUser(user);
                     sendMessage("Has comprado una Superball!");

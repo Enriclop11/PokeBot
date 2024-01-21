@@ -6,21 +6,29 @@ public class Spawn extends Thread {
 
     public Boolean active = true;
 
-    private static final int CD_MINUTES = 10;
+    public int cdMinutes = 5;
 
-    public Spawn(TwitchConnection twitchConnection) {
-        this.conn = twitchConnection;
+    public Spawn() {
+    }
+
+    public Spawn(TwitchConnection conn, int cdMinutes) {
+        this.conn = conn;
+        this.cdMinutes = cdMinutes;
     }
 
     public void run() {
+        System.out.println("Spawn started");
+        System.out.println("cdMinutes: " + cdMinutes);
         while (active) {
             try {
-                Thread.sleep(1000 * 60 * CD_MINUTES);
+                Thread.sleep(1000 * 60 * cdMinutes);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            conn.spawnPokemon();
-        }
+            if (active)  {
+                conn.spawnPokemon();
+            }
+         }
     }
 
 }

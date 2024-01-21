@@ -1,10 +1,11 @@
 package com.enriclop.pokebot.twitchConnection;
 
-import com.enriclop.pokebot.PokeLogic.TableType;
+import com.enriclop.pokebot.pokeLogic.TableType;
 import com.enriclop.pokebot.modelo.Move;
 import com.enriclop.pokebot.modelo.Pokemon;
 import com.enriclop.pokebot.modelo.User;
 import com.enriclop.pokebot.dto.PokemonCombat;
+import com.enriclop.pokebot.security.Settings;
 import com.enriclop.pokebot.servicio.UserService;
 import com.enriclop.pokebot.utilities.Timer;
 import com.enriclop.pokebot.utilities.Utilities;
@@ -23,6 +24,8 @@ public class Combat extends Thread{
     UserService userService;
 
     TwitchClient twitchClient;
+
+    Settings settings;
 
     User player1;
     User player2;
@@ -43,9 +46,10 @@ public class Combat extends Thread{
     Boolean started = false;
 
 
-    public Combat(Pokemon pokemon1, User user2, UserService userService, TwitchClient twitchClient) {
+    public Combat(Pokemon pokemon1, User user2, UserService userService, TwitchClient twitchClient, Settings settings) {
         this.userService = userService;
         this.twitchClient = twitchClient;
+        this.settings = settings;
 
         this.pokemon1 = pokemon1;
 
@@ -56,15 +60,19 @@ public class Combat extends Thread{
         timer.start();
     }
 
+    public void sendMessage(String message) {
+        twitchClient.getChat().sendMessage(settings.channelName, message);
+    }
+
     public void run() {
-        twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + Utilities.firstLetterToUpperCase(player2.getUsername())  + " aceptara el combate? !accept <Pokemon>");
+        sendMessage("¡" + Utilities.firstLetterToUpperCase(player2.getUsername())  + " aceptara el combate? !accept <Pokemon>");
 
         twitchClient.getEventManager().onEvent(ChannelMessageEvent.class, event -> {
             if (!active) return;
             if (accepted) return;
-            if (!event.getUser().getName().equals(player2.getUsername())) return;
+            if (!event.getUser().getId().equals(player2.getTwitchId())) return;
             if (timer.getMinutes() > 1) {
-                twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + Utilities.firstLetterToUpperCase(player2.getUsername()) + " no ha aceptado el combate a tiempo!");
+                sendMessage("¡" + Utilities.firstLetterToUpperCase(player2.getUsername()) + " no ha aceptado el combate a tiempo!");
                 active = false;
                 return;
             }
@@ -73,14 +81,13 @@ public class Combat extends Thread{
             String command = event.getMessage().split(" ")[0];
 
             if (command.equals("!accept")){
-                twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + Utilities.firstLetterToUpperCase(player2.getUsername()) + " ha aceptado el combate!");
-
                 try {
                     int pokemonPosition = Integer.parseInt(event.getMessage().split(" ")[1])-1;
                     pokemon2 = player2.getPokemons().get(pokemonPosition);
                     accepted = true;
+                    sendMessage("¡" + Utilities.firstLetterToUpperCase(player2.getUsername()) + " ha aceptado el combate!");
                 } catch (Exception e) {
-                    twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME,"¡" + Utilities.firstLetterToUpperCase(player2.getUsername()) + " no tiene un pokemon en esa posicion!");
+                    sendMessage("¡" + Utilities.firstLetterToUpperCase(player2.getUsername()) + " no tiene un pokemon en esa posicion!");
                     active = false;
                     return;
                 }
@@ -133,6 +140,8 @@ public class Combat extends Thread{
         winner.addScore(100);
         userService.saveUser(winner);
 
+        sendMessage("¡" + Utilities.firstLetterToUpperCase(winner.getUsername()) + " ha ganado el combate!");
+
         endCombat();
     }
 
@@ -147,12 +156,12 @@ public class Combat extends Thread{
         Move selectedMove = attacker.getMoves().get(move);
 
         if (selectedMove.getAccuracy() < (int) (Math.random() * 100)) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME, attacker.getName() + " ha fallado el ataque " + selectedMove.getName() + "!");
+            sendMessage(attacker.getName() + " ha fallado el ataque !");
             return;
         }
 
         if (selectedMove.getPower() == 0) {
-            twitchClient.getChat().sendMessage(SETTINGS.CHANNEL_NAME, attacker.getName() + " ha usado " + selectedMove.getName() + "!");
+            sendMessage(attacker.getName() + " ha usado " + selectedMove.getName() + "!");
             return;
         }
 
@@ -200,6 +209,7 @@ public class Combat extends Thread{
         System.out.println(attacker.getName() + " ha usado " + selectedMove.getName() + "!");
         System.out.println("Damage: " + damage);
 
+        sendMessage(attacker.getName() + " ha usado " + selectedMove.getName() + "y ha hecho " + (int) damage +  " de daño !");
         defender.setCurrentHp((int) (defender.getCurrentHp() - damage));
         
         if (defender.getCurrentHp() < 0) {
