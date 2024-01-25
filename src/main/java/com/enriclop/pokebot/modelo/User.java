@@ -48,4 +48,8 @@ public class User {
         this.score += score;
     }
 
+    public void minusScore(Integer score) {
+        this.score -= score;
+    }
+
 }

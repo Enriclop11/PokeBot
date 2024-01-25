@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Commands</title>
+    <link rel="stylesheet" th:href="@{/css/settings/commands.css}">
+
 </head>
 <body>
 
@@ -15,6 +17,11 @@
             </div>
 
             <input type="hidden" name="name" th:value="${command.getName()}">
+
+            <div>
+                <label for="customName">Custom Name</label>
+                <input type="text" name="customName" id="customName" th:value="${command.getCustomName()}">
+            </div>
 
             <div>
                 <label for="active">Active</label>

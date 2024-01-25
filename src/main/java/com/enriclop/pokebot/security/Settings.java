@@ -6,8 +6,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class Settings {
     public String channelName = "";
+    public String oAuthTokenChannel = "";
+
     public String botUsername = "";
-    public String oAuthToken = "";
+    public String oAuthTokenBot = "";
+
     public String domain = "";
     public AdminUser adminUser;
 

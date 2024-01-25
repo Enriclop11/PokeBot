@@ -5,12 +5,12 @@ import com.enriclop.pokebot.dto.Command;
 import com.enriclop.pokebot.dto.SettingsDTO;
 import com.enriclop.pokebot.security.Settings;
 import com.enriclop.pokebot.twitchConnection.TwitchConnection;
+import com.enriclop.pokebot.twitchConnection.settings.Prices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.List;
@@ -37,9 +37,10 @@ public class SettingsController {
             spawnActive = false;
         }
 
+        boolean haveBotToken = !settings.oAuthTokenBot.equals("");
+        boolean haveChannelToken = !settings.oAuthTokenChannel.equals("");
 
-
-        SettingsDTO settings = new SettingsDTO(cdMinutes, spawnActive, this.settings.channelName, this.settings.botUsername, this.settings.domain);
+        SettingsDTO settings = new SettingsDTO(cdMinutes, spawnActive, this.settings.channelName, haveChannelToken, this.settings.botUsername, haveBotToken, this.settings.domain);
         model.addAttribute("settings", settings);
         return "settings/settings";
     }
@@ -69,9 +70,9 @@ public class SettingsController {
             changed = true;
         }
 
-        if (settings.getOAuthToken() != null && !settings.getOAuthToken().equals("")  && !this.settings.oAuthToken.equals(settings.getOAuthToken()) ) {
-            System.out.println(settings.getOAuthToken());
-            this.settings.oAuthToken = settings.getOAuthToken();
+        if (settings.getOAuthTokenBot() != null && !settings.getOAuthTokenBot().equals("")  && !this.settings.oAuthTokenBot.equals(settings.getOAuthTokenBot()) ) {
+            System.out.println(settings.getOAuthTokenBot());
+            this.settings.oAuthTokenBot = settings.getOAuthTokenBot();
             changed = true;
         }
 
@@ -102,22 +103,6 @@ public class SettingsController {
         return "settings/commands";
     }
 
-    @GetMapping("/settings/commands/{command}")
-    public String command(@PathVariable String command, Model model) {
-        List<Command> commands = twitchConnection.getCommands();
-
-        Command commandObj = null;
-        for (Command c : commands) {
-            if (c.getName().equals(command)) {
-                commandObj = c;
-                break;
-            }
-        }
-
-        model.addAttribute("command", commandObj);
-        return "redirect:/settings/commands";
-    }
-
     @PostMapping("/settings/commands")
     public String changeCommands(@ModelAttribute("command") Command command) {
         System.out.println(command.getName());
@@ -135,6 +120,43 @@ public class SettingsController {
         twitchConnection.setCommands(commands);
 
         return "redirect:/settings/commands";
+    }
+
+    @GetMapping("/settings/rewards")
+    public String rewards(Model model) {
+        model.addAttribute("commands", twitchConnection.getRewards());
+        return "settings/rewards";
+    }
+
+    @PostMapping("/settings/rewards")
+    public String changeRewards(@ModelAttribute("command") Command reward) {
+        System.out.println(reward.getName());
+        System.out.println(reward.isActive());
+
+        List<Command> rewards = twitchConnection.getRewards();
+
+        for (Command r : rewards) {
+            if (r.getName().equals(reward.getName())) {
+                r.setActive(reward.isActive());
+                break;
+            }
+        }
+
+        twitchConnection.setRewards(rewards);
+
+        return "redirect:/settings/rewards";
+    }
+
+    @GetMapping("/settings/prices")
+    public String prices(Model model) {
+        model.addAttribute("prices", twitchConnection.getPrices());
+        return "settings/prices";
+    }
+
+    @PostMapping("/settings/prices")
+    public String changePrices(@ModelAttribute("command") Prices price) {
+        twitchConnection.setPrices(price);
+        return "redirect:/settings/prices";
     }
 
 

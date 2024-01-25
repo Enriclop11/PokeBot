@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Settings</title>
+    <link rel="stylesheet" th:href="@{/css/settings/settings.css}">
 </head>
 <body>
 
@@ -26,25 +27,28 @@
     <div class="Connection Settings">
         <h3>Connection Settings</h3>
 
-        <!-- channelName, botUsername, oauthToken -->
         <label for="channelName">Channel Name</label>
-        <input type="text" name="channelName" id="channelName" th:value="${settings.getChannelName()}">
+        <input type="text" name="channelName" id="channelName" th:value="${settings.getChannelName()}" required>
 
+        <label for="oauthTokenChannel">OAuth Channel Token</label>
+        <input type="text" name="oauthTokenChannel" id="oauthTokenChannel" th:required="${!settings.isOAuthTokenChannel()}">
+
+        <br>
         <br>
 
         <label for="botUsername">Bot Username</label>
-        <input type="text" name="botUsername" id="botUsername" th:value="${settings.getBotUsername()}">
+        <input type="text" name="botUsername" id="botUsername" th:value="${settings.getBotUsername()}" required>
 
         <br>
 
-        <label for="oAuthToken">OAuth Token</label>
-        <input type="text" name="oAuthToken" id="oAuthToken">
+        <label for="oauthTokenBot">OAuth Bot Token</label>
+        <input type="text" name="oauthTokenBot" id="oauthTokenBot" th:required="${!settings.isHaveBotToken()}">
 
         <br>
         <br>
 
         <label for="domain">Domain</label>
-        <input type="text" name="domain" id="domain" th:value="${settings.getDomain()}">
+        <input type="text" name="domain" id="domain" th:value="${settings.getDomain()}" required>
     </div>
 
     <div class="Command Settings">
@@ -54,7 +58,21 @@
             <button type="button">Edit Commands</button>
         </a>
 
+        <br>
+
+        <a href="/settings/rewards">
+            <button type="button">Edit Point Rewards</button>
+        </a>
+
     </div>
+
+    <dive class="price_settings">
+        <h3>Price Settings</h3>
+
+        <a href="/settings/prices">
+            <button type="button">Edit Prices</button>
+        </a>
+    </dive>
 
     <div class="Admin Settings">
         <h3>Admin Settings</h3>
@@ -64,6 +82,8 @@
         </a>
 
     </div>
+
+    <br>
 
     <input type="submit" value="Save">
 

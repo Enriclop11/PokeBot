@@ -211,7 +211,7 @@ public class Combat extends Thread{
 
         sendMessage(attacker.getName() + " ha usado " + selectedMove.getName() + "y ha hecho " + (int) damage +  " de daño !");
         defender.setCurrentHp((int) (defender.getCurrentHp() - damage));
-        
+
         if (defender.getCurrentHp() < 0) {
             defender.setCurrentHp(0);
         }

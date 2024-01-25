@@ -12,7 +12,19 @@ public class Command {
 
     String name;
 
+    String customName;
+
     @Nullable
     boolean active;
+
+    Command() {
+    }
+
+    public Command(String name, boolean active) {
+        this.name = name;
+        this.customName = name;
+        this.active = active;
+    }
+
 
 }

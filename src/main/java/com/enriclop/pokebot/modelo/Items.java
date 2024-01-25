@@ -48,4 +48,16 @@ public class Items {
         this.masterball += 1;
     }
 
+    public void addSuperball(int amount) {
+        this.superball += amount;
+    }
+
+    public void addUltraball(int amount) {
+        this.ultraball += amount;
+    }
+
+    public void addMasterball(int amount) {
+        this.masterball += amount;
+    }
+
 }
