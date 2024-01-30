@@ -1,5 +1,6 @@
 package com.enriclop.pokebot.modelo;
 
+import com.enriclop.pokebot.utilities.Utilities;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,11 +20,13 @@ public class User {
 
     private String username;
 
+    private String dcUsername;
+
     private Integer score;
 
     private String avatar;
 
-
+    private int pokemonSelected;
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "user", orphanRemoval = true, cascade = CascadeType.ALL)
     private List<Pokemon> pokemons = new ArrayList<>();
@@ -31,6 +34,10 @@ public class User {
     @OneToOne(orphanRemoval = true, cascade = CascadeType.ALL)
     @JoinColumn(name = "items_id")
     private Items items;
+
+    @OneToOne(orphanRemoval = true, cascade = CascadeType.ALL)
+    @JoinColumn(name = "watchtime_id")
+    private WatchTime watchTime;
 
     public User() {
     }
@@ -42,6 +49,7 @@ public class User {
         this.avatar = avatar;
 
         this.items = new Items();
+        this.watchTime = new WatchTime();
     }
 
     public void addScore(Integer score) {
@@ -50,6 +58,10 @@ public class User {
 
     public void minusScore(Integer score) {
         this.score -= score;
+    }
+
+    public String getUsernameDisplay() {
+        return Utilities.firstLetterToUpperCase(this.username);
     }
 
 }

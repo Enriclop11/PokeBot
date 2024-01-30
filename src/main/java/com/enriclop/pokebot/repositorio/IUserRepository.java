@@ -12,4 +12,7 @@ public interface IUserRepository extends JpaRepository<User, Integer> {
 
     @Query("select u from User u where u.twitchId like ?1")
     User findByTwitchIdLike(String twitchId);
+
+    @Query("select u from User u where u.dcUsername like ?1")
+    User findByDcUsernameLike(String dcUsername);
 }

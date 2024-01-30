@@ -19,13 +19,18 @@ import com.github.twitch4j.TwitchClientBuilder;
 import com.github.twitch4j.chat.events.channel.ChannelMessageEvent;
 import com.github.twitch4j.chat.events.channel.FollowEvent;
 import com.github.twitch4j.common.events.domain.EventUser;
+import com.github.twitch4j.helix.domain.Chatter;
+import com.github.twitch4j.helix.domain.ChattersList;
 import com.github.twitch4j.pubsub.events.ChannelSubscribeEvent;
 import com.github.twitch4j.pubsub.events.RewardRedeemedEvent;
+import com.github.twitch4j.util.PaginationUtil;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Component
@@ -65,6 +70,10 @@ public class TwitchConnection extends Thread {
 
     List<Command> rewards;
 
+    OAuth2Credential streamerCredential;
+
+    com.github.twitch4j.helix.domain.User channel;
+
     public TwitchConnection() {
         settings = new Settings();
 
@@ -79,7 +88,9 @@ public class TwitchConnection extends Thread {
                 new Command("items", true),
                 new Command("points", true),
                 new Command("help", true),
-                new Command("lookprices", true)
+                new Command("lookprices", true),
+                new Command("linkDiscord", true),
+                new Command("watchtime", true)
         );
 
         rewards = List.of(
@@ -90,8 +101,7 @@ public class TwitchConnection extends Thread {
                 new Command("test", true)
         );
 
-        // Dev Action - Eliminar en producción
-        connect();
+
     }
 
     public void connect() {
@@ -101,24 +111,27 @@ public class TwitchConnection extends Thread {
         }
 
          twitchClient = TwitchClientBuilder.builder()
-                 .withDefaultAuthToken(new OAuth2Credential(settings.botUsername, settings.oAuthTokenBot))
+                 .withDefaultAuthToken(new OAuth2Credential(settings.botUsername, settings.getoAuthTokenBot()))
                  .withEnableHelix(true)
                  .withEnableChat(true)
                  .withEnablePubSub(true)
-                 .withChatAccount(new OAuth2Credential(settings.botUsername, settings.oAuthTokenBot))
+                 .withChatAccount(new OAuth2Credential(settings.botUsername, settings.getoAuthTokenBot()))
                  .build();
 
          twitchClient.getChat().joinChannel(settings.channelName);
 
-         com.github.twitch4j.helix.domain.User channel = getUserDetails(settings.channelName);
+         channel = getUserDetails(settings.channelName);
 
-         OAuth2Credential credential = new OAuth2Credential("twitch", settings.oAuthTokenChannel);
+         streamerCredential = new OAuth2Credential("twitch", settings.getoAuthTokenChannel());
 
          twitchClient.getPubSub().listenForChannelPointsRedemptionEvents(null, channel.getId());
-         twitchClient.getPubSub().listenForFollowingEvents(credential, channel.getId());
-         twitchClient.getPubSub().listenForSubscriptionEvents(credential, channel.getId());
+         twitchClient.getPubSub().listenForSubscriptionEvents(streamerCredential, channel.getId());
+         
+         twitchClient.getClientHelper().enableFollowEventListener(settings.channelName);
 
          commands();
+
+         new SetWatchTime(this).start();
     }
 
     public void sendMessage(String message) {
@@ -129,6 +142,8 @@ public class TwitchConnection extends Thread {
         eventManager = twitchClient.getEventManager();
 
         eventManager.onEvent(ChannelMessageEvent.class, event -> {
+
+            getChatters();
 
 
             String command = event.getMessage().split(" ")[0];
@@ -151,16 +166,10 @@ public class TwitchConnection extends Thread {
         });
 
         eventManager.onEvent(FollowEvent.class , event -> {
-            System.out.println("Follow Listener");
-            sendMessage("Follow Listener");
-
-            followingReward(event);
+            followingReward(event.getUser().getId());
         });
 
         eventManager.onEvent(ChannelSubscribeEvent.class, event -> {
-            System.out.println("Sub Listener");
-            sendMessage("Sub Listener");
-
             subReward(event.getData().getUserId());
         });
 
@@ -183,7 +192,23 @@ public class TwitchConnection extends Thread {
             case "points" -> myPoints(event);
             case "help" -> sendMessage("Comandos: !leaderboard !pokemon !catch !combat !mypokemon !refreshusername !buy !items !points");
             case "lookprices" -> lookPrices(event);
+            case "linkdiscord" -> linkDiscord(event);
+            case "watchtime" -> sendMessage("Tu tiempo de visualización: " + userService.getUserByTwitchId(event.getUser().getId()).getWatchTime());
         }
+    }
+
+    public void linkDiscord(ChannelMessageEvent event){
+        start(event.getUser().getId());
+        User user = userService.getUserByTwitchId(event.getUser().getId());
+
+        if (event.getMessage().split(" ").length < 2) {
+            sendMessage("Introduce tu nombre de usuario de Discord!");
+            return;
+        }
+
+        user.setDcUsername(event.getMessage().split(" ")[1]);
+        userService.saveUser(user);
+        sendMessage("Discord vinculado!");
     }
 
     public void useReward(Command command, RewardRedeemedEvent event){
@@ -208,6 +233,38 @@ public class TwitchConnection extends Thread {
         }
     }
 
+    public Collection<Chatter> getChatters() {
+
+        return PaginationUtil.getPaginated(
+                cursor -> {
+                    try {
+                        return twitchClient.getHelix().getChatters(settings.getTokenChannel(), channel.getId(), channel.getId(), 1000, cursor).execute();
+                    } catch (Exception e) {
+                        System.out.println("Error al obtener los chatters");
+                        return null;
+                    }
+                },
+                ChattersList::getChatters,
+                call -> call.getPagination() != null ? call.getPagination().getCursor() : null
+        );
+    }
+
+    public List<User> getChattersUsers() {
+        Collection<Chatter> chatters = getChatters();
+        List<User> users = new ArrayList<>();
+        for (Chatter chatter : chatters) {
+            User user = userService.getUserByTwitchId(chatter.getUserId());
+            if (user != null) {
+                users.add(user);
+            } else {
+                start(chatter.getUserId());
+                users.add(userService.getUserByTwitchId(chatter.getUserId()));
+            }
+        }
+        return users;
+    }
+
+
     public void setSpawn(Boolean active, int cdMinutes) {
         if (active) {
             spawn = new Spawn(this, cdMinutes);
@@ -220,18 +277,18 @@ public class TwitchConnection extends Thread {
     public void start (String twitchId) {
         if (userService.getUserByTwitchId(twitchId) == null) {
             com.github.twitch4j.helix.domain.User user = getUserDetails(Integer.parseInt(twitchId));
-
             User newUser = new User(user.getId(), user.getDisplayName().toLowerCase(), user.getProfileImageUrl());
             userService.saveUser(newUser);
         }
     }
 
-    public void followingReward(FollowEvent event) {
-        start(event.getUser().getId());
+    public void followingReward(String twitchId) {
+        start(twitchId);
 
-        sendMessage("Gracias por seguirme " + event.getUser().getName() + "!");
+        User user = userService.getUserByTwitchId(twitchId);
 
-        User user = userService.getUserByTwitchId(event.getUser().getId());
+        sendMessage("Gracias por seguirme " + user.getUsernameDisplay() + "!");
+
         Items items = user.getItems();
         items.addSuperball();
         items.addSuperball(10);
@@ -244,6 +301,9 @@ public class TwitchConnection extends Thread {
         start(twitchId);
 
         User user = userService.getUserByTwitchId(twitchId);
+
+        sendMessage("Gracias por suscribirte " + user.getUsernameDisplay() + "!");
+
         Items items = user.getItems();
         items.addSuperball(50);
         items.addUltraball(20);
@@ -397,9 +457,6 @@ public class TwitchConnection extends Thread {
         if (event.getMessage().split(" ").length < 2) {
             sendMessage("Elige un usuario para combatir!");
             return;
-        } else if (event.getMessage().split(" ").length < 3) {
-            sendMessage("Elige un pokemon para combatir!");
-            return;
         }
 
         User player1;
@@ -413,11 +470,13 @@ public class TwitchConnection extends Thread {
         }
 
         try {
-            if (event.getMessage().split(" ")[1].startsWith("@")) {
-                event.getMessage().split(" ")[1] = event.getMessage().split(" ")[1].substring(1);
+            String username = event.getMessage().split(" ")[1];
+
+            if (username.startsWith("@")) {
+                username = username.substring(1);
             }
 
-            player2 = userService.getUserByUsername(event.getMessage().split(" ")[1]);
+            player2 = userService.getUserByUsername(username);
 
             if (player2 == null) {
                 sendMessage("El usuario no existe!");
@@ -431,26 +490,35 @@ public class TwitchConnection extends Thread {
         if (player1 == player2) {
             sendMessage("No puedes combatir contra ti mismo!");
             return;
-        } else if (player1.getPokemons().size() == 0) {
+        } else if (player1.getPokemons().isEmpty()) {
             sendMessage("No tienes ningun pokemon!");
             return;
-        } else if (player2.getPokemons().size() == 0) {
+        } else if (player2.getPokemons().isEmpty()) {
             sendMessage("El " +  Utilities.firstLetterToUpperCase(player2.getUsername()) + " no tiene ningun pokemon!");
             return;
         }
 
-        Pokemon pokemon1;
+        Pokemon pokemon1 = getSelectedPokemon(player1);
+        Pokemon pokemon2 = getSelectedPokemon(player2);
 
-        try {
-            int pokemonPosition = Integer.parseInt(event.getMessage().split(" ")[2])-1;
-            pokemon1 = player1.getPokemons().get(pokemonPosition);
-        } catch (Exception e) {
-            sendMessage("El pokemon no existe!");
+        if (pokemon1 == null) {
+            sendMessage("No tienes ningun pokemon seleccionado!");
+            return;
+        } else if (pokemon2 == null) {
+            sendMessage("El " +  Utilities.firstLetterToUpperCase(player2.getUsername()) + " no tiene ningun pokemon seleccionado!");
             return;
         }
 
-        activeCombat = new Combat(pokemon1, player2, userService, twitchClient, settings);
+        activeCombat = new Combat(player1, player2, userService, twitchClient, settings, pokemon1, pokemon2);
         activeCombat.start();
+    }
+
+    public Pokemon getSelectedPokemon(User user) {
+        try {
+            return pokemonService.getPokemonById(user.getPokemonSelected());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public void lookPokemon (ChannelMessageEvent event){

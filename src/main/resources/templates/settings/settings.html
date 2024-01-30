@@ -30,7 +30,9 @@
         <label for="channelName">Channel Name</label>
         <input type="text" name="channelName" id="channelName" th:value="${settings.getChannelName()}" required>
 
-        <label for="oauthTokenChannel">OAuth Channel Token</label>
+        <br>
+
+        <label for="oauthTokenChannel">Channel Token</label>
         <input type="text" name="oauthTokenChannel" id="oauthTokenChannel" th:required="${!settings.isOAuthTokenChannel()}">
 
         <br>
@@ -41,8 +43,14 @@
 
         <br>
 
-        <label for="oauthTokenBot">OAuth Bot Token</label>
+        <label for="oauthTokenBot">Bot Token</label>
         <input type="text" name="oauthTokenBot" id="oauthTokenBot" th:required="${!settings.isHaveBotToken()}">
+
+        <br>
+        <br>
+
+        <label for="discordToken">Discord Token</label>
+        <input type="text" name="discordToken" id="discordToken" th:required="${!settings.isHaveDiscordToken()}">
 
         <br>
         <br>

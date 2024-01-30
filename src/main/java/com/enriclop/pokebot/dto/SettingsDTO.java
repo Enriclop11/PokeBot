@@ -14,13 +14,19 @@ public class SettingsDTO {
 
     String channelName;
 
-    boolean oAuthTokenChannel;
+    String oAuthTokenChannel;
+
+    boolean haveChannelToken;
 
     String botUsername;
 
     String oAuthTokenBot;
 
     boolean haveBotToken;
+
+    String discordToken;
+
+    boolean haveDiscordToken;
 
     String domain;
 
@@ -30,17 +36,16 @@ public class SettingsDTO {
     boolean spawnActive;
 
     public SettingsDTO() {
-        this.cdMinutes = 5;
-        this.spawnActive = false;
     }
 
-    public SettingsDTO(int cdMinutes, boolean spawnActive, String channelName, boolean oAuthTokenChannel, String botUsername, boolean haveBotToken, String domain) {
+    public SettingsDTO(int cdMinutes, boolean spawnActive, String channelName, boolean haveChannelToken, String botUsername, boolean haveBotToken, String domain, boolean haveDiscordToken) {
         this.cdMinutes = cdMinutes;
         this.spawnActive = spawnActive;
         this.channelName = channelName;
-        this.oAuthTokenChannel = oAuthTokenChannel;
         this.botUsername = botUsername;
         this.domain = domain;
         this.haveBotToken = haveBotToken;
+        this.haveChannelToken = haveChannelToken;
+        this.haveDiscordToken = haveDiscordToken;
     }
 }

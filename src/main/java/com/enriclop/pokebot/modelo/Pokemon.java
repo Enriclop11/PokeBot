@@ -1,6 +1,7 @@
 package com.enriclop.pokebot.modelo;
 
 import com.enriclop.pokebot.enums.Types;
+import com.enriclop.pokebot.utilities.Utilities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -136,5 +137,9 @@ public class Pokemon {
                 ", \"isShiny\":" + isShiny +
                 ", \"moves\":" + moves +
                 '}';
+    }
+
+    public String getDisplayName() {
+        return Utilities.firstLetterToUpperCase(this.name);
     }
 }

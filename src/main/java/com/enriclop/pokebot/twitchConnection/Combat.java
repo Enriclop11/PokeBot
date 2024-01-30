@@ -46,15 +46,16 @@ public class Combat extends Thread{
     Boolean started = false;
 
 
-    public Combat(Pokemon pokemon1, User user2, UserService userService, TwitchClient twitchClient, Settings settings) {
+    public Combat(User user1, User user2, UserService userService, TwitchClient twitchClient, Settings settings, Pokemon pokemon1, Pokemon pokemon2) {
         this.userService = userService;
         this.twitchClient = twitchClient;
         this.settings = settings;
 
-        this.pokemon1 = pokemon1;
-
-        this.player1 = pokemon1.getUser();
+        this.player1 = user1;
         this.player2 = user2;
+
+        this.pokemon1 = pokemon1;
+        this.pokemon2 = pokemon2;
 
         timer = new Timer();
         timer.start();
@@ -65,7 +66,7 @@ public class Combat extends Thread{
     }
 
     public void run() {
-        sendMessage("¡" + Utilities.firstLetterToUpperCase(player2.getUsername())  + " aceptara el combate? !accept <Pokemon>");
+        sendMessage("¡" + Utilities.firstLetterToUpperCase(player2.getUsername())  + " aceptara el combate? !accept");
 
         twitchClient.getEventManager().onEvent(ChannelMessageEvent.class, event -> {
             if (!active) return;
@@ -81,16 +82,8 @@ public class Combat extends Thread{
             String command = event.getMessage().split(" ")[0];
 
             if (command.equals("!accept")){
-                try {
-                    int pokemonPosition = Integer.parseInt(event.getMessage().split(" ")[1])-1;
-                    pokemon2 = player2.getPokemons().get(pokemonPosition);
-                    accepted = true;
-                    sendMessage("¡" + Utilities.firstLetterToUpperCase(player2.getUsername()) + " ha aceptado el combate!");
-                } catch (Exception e) {
-                    sendMessage("¡" + Utilities.firstLetterToUpperCase(player2.getUsername()) + " no tiene un pokemon en esa posicion!");
-                    active = false;
-                    return;
-                }
+                accepted = true;
+                sendMessage("¡" + Utilities.firstLetterToUpperCase(player2.getUsername()) + " ha aceptado el combate!");
             }
         });
 

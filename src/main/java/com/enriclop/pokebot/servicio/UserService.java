@@ -25,6 +25,10 @@ public class UserService {
         return userRepository.findByUsernameLike(username);
     }
 
+    public User getUserByDiscordUsername(String discordUsername) {
+        return userRepository.findByDcUsernameLike(discordUsername);
+    }
+
     public User getUserByTwitchId(String twitchId) {
         return userRepository.findByTwitchIdLike(twitchId);
     }

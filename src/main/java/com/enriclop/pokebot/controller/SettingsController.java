@@ -1,5 +1,6 @@
 package com.enriclop.pokebot.controller;
 
+import com.enriclop.pokebot.discordConnection.DiscordConnection;
 import com.enriclop.pokebot.dto.AdminUser;
 import com.enriclop.pokebot.dto.Command;
 import com.enriclop.pokebot.dto.SettingsDTO;
@@ -22,7 +23,10 @@ public class SettingsController {
     TwitchConnection twitchConnection;
 
      @Autowired
-    Settings settings;
+     Settings settings;
+
+     @Autowired
+     DiscordConnection discordConnection;
 
     @GetMapping("/settings")
     public String settings(Model model) {
@@ -37,10 +41,11 @@ public class SettingsController {
             spawnActive = false;
         }
 
-        boolean haveBotToken = !settings.oAuthTokenBot.equals("");
-        boolean haveChannelToken = !settings.oAuthTokenChannel.equals("");
+        boolean haveBotToken = !settings.tokenBot.isEmpty();
+        boolean haveChannelToken = !settings.tokenChannel.isEmpty();
+        boolean haveDiscordToken = !settings.tokenDiscord.isEmpty();
 
-        SettingsDTO settings = new SettingsDTO(cdMinutes, spawnActive, this.settings.channelName, haveChannelToken, this.settings.botUsername, haveBotToken, this.settings.domain);
+        SettingsDTO settings = new SettingsDTO(cdMinutes, spawnActive, this.settings.channelName, haveChannelToken, this.settings.botUsername, haveBotToken, this.settings.domain, haveDiscordToken);
         model.addAttribute("settings", settings);
         return "settings/settings";
     }
@@ -57,7 +62,7 @@ public class SettingsController {
         if (settings.getChannelName() == null) settings.setChannelName("");
 
 
-        if (!settings.getChannelName().equals("") && !this.settings.channelName.equals(settings.getChannelName())) {
+        if (!settings.getChannelName().isEmpty() && !this.settings.channelName.equals(settings.getChannelName())) {
 
             if (twitchConnection.getTwitchClient() != null) twitchConnection.getTwitchClient().getChat().leaveChannel(this.settings.channelName);
 
@@ -65,21 +70,30 @@ public class SettingsController {
             changed = true;
         }
 
-        if (!settings.getBotUsername().equals("") && !this.settings.botUsername.equals(settings.getBotUsername())) {
+        if (!settings.getBotUsername().isEmpty() && !this.settings.botUsername.equals(settings.getBotUsername())) {
             this.settings.botUsername = settings.getBotUsername();
             changed = true;
         }
 
-        if (settings.getOAuthTokenBot() != null && !settings.getOAuthTokenBot().equals("")  && !this.settings.oAuthTokenBot.equals(settings.getOAuthTokenBot()) ) {
+        if (settings.getOAuthTokenBot() != null && !settings.getOAuthTokenBot().isEmpty() && !this.settings.tokenBot.equals(settings.getOAuthTokenBot()) ) {
             System.out.println(settings.getOAuthTokenBot());
-            this.settings.oAuthTokenBot = settings.getOAuthTokenBot();
+            this.settings.tokenBot = settings.getOAuthTokenBot();
             changed = true;
+        }
+
+        if (settings.getOAuthTokenChannel() != null && !settings.getOAuthTokenChannel().isEmpty() && !this.settings.tokenChannel.equals(settings.getOAuthTokenChannel())) {
+            this.settings.tokenChannel = settings.getOAuthTokenChannel();
+            changed = true;
+        }
+
+        if (settings.getDiscordToken() != null && !settings.getDiscordToken().isEmpty() && !this.settings.tokenChannel.equals(settings.getDiscordToken())) {
+            this.settings.tokenDiscord = settings.getDiscordToken();
+            discordConnection.restart();
         }
 
         if (changed) {
             twitchConnection.connect();
         }
-
         this.settings.domain = settings.getDomain();
 
         return "redirect:/settings";
