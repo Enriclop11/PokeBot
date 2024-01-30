@@ -93,6 +93,11 @@ public class DiscordConnection {
 
         try{
             user = userService.getUserByDiscordUsername(event.getMessage().getAuthor().get().getUsername());
+
+            if (user == null) {
+                channel.createMessage("No tienes cuenta vinculada").block();
+                return;
+            }
         } catch (Exception e) {
             channel.createMessage("No tienes cuenta vinculada").block();
             return;
@@ -106,10 +111,11 @@ public class DiscordConnection {
         EmbedCreateSpec embedPokemon = getEmbedPokemon(user, 0);
 
         List<Button> buttons = new ArrayList<>();
+        buttons.add(Button.secondary("select_" + user.getId() + "_1", "Seleccionar"));
         if (user.getPokemons().size() > 1) {
             buttons.add(Button.primary("page_" + user.getId() + "_2", "▶"));
         }
-        buttons.add(Button.secondary("select_" + user.getId() + "_1", "Seleccionar"));
+
 
         Mono<Message> createMessageMono = channel.createMessage(MessageCreateSpec.builder()
                 .addEmbed(embedPokemon)
@@ -144,9 +150,14 @@ public class DiscordConnection {
                     int userId = Integer.parseInt(data[1]);
                     int pokemonIndex = Integer.parseInt(data[2]) - 1;
 
+                    System.out.println("Seleccionando pokemon " + pokemonIndex + " de " + userId);
+
                     User user1 = userService.getUserById(userId);
-                    user1.setPokemonSelected(user1.getPokemons().get(pokemonIndex).getId());
+                    Pokemon pokemon = user1.getPokemons().get(pokemonIndex);
+                    user1.setPokemonSelected(pokemon.getId());
                     userService.saveUser(user1);
+
+                    return eventButton.reply().withContent("Pokemon " + pokemon.getDisplayName() + " seleccionado");
                 }
 
                 return Mono.empty();

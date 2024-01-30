@@ -89,7 +89,7 @@ public class TwitchConnection extends Thread {
                 new Command("points", true),
                 new Command("help", true),
                 new Command("lookprices", true),
-                new Command("linkDiscord", true),
+                new Command("linkdiscord", true),
                 new Command("watchtime", true)
         );
 
@@ -101,7 +101,7 @@ public class TwitchConnection extends Thread {
                 new Command("test", true)
         );
 
-
+       
     }
 
     public void connect() {
@@ -142,10 +142,6 @@ public class TwitchConnection extends Thread {
         eventManager = twitchClient.getEventManager();
 
         eventManager.onEvent(ChannelMessageEvent.class, event -> {
-
-            getChatters();
-
-
             String command = event.getMessage().split(" ")[0];
 
             if (command.startsWith("!")) {
@@ -181,6 +177,7 @@ public class TwitchConnection extends Thread {
         if (!command.isActive()) return;
 
         switch (command.getName()) {
+            case "help" -> sendMessage("Comandos disponibles: !leaderboard !pokemon !catch !combat !mypokemon !refreshusername !buy !items !points !lookprices !linkDiscord !watchtime");
             case "leaderboard" -> leaderboard();
             case "pokemon" -> spawnPokemon();
             case "catch" -> trowPokeball(event);
@@ -190,7 +187,6 @@ public class TwitchConnection extends Thread {
             case "buy" -> buyItem(event);
             case "items" -> lookItems(event);
             case "points" -> myPoints(event);
-            case "help" -> sendMessage("Comandos: !leaderboard !pokemon !catch !combat !mypokemon !refreshusername !buy !items !points");
             case "lookprices" -> lookPrices(event);
             case "linkdiscord" -> linkDiscord(event);
             case "watchtime" -> sendMessage("Tu tiempo de visualización: " + userService.getUserByTwitchId(event.getUser().getId()).getWatchTime());
@@ -198,6 +194,7 @@ public class TwitchConnection extends Thread {
     }
 
     public void linkDiscord(ChannelMessageEvent event){
+        System.out.println("Linking Discord");
         start(event.getUser().getId());
         User user = userService.getUserByTwitchId(event.getUser().getId());
 
